@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Waiting Room{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold">Waiting Room</h1>
+        <a href="{% url 'waiting_room_add' %}" class="btn btn-primary">Add Patient</a>
+    </div>
+
+    {% if is_overloaded %}
+        <div class="alert alert-warning">
+            <span>Too many patients in the waiting room.</span>
+        </div>
+    {% endif %}
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Queue No.</th>
+                        <th>Patient</th>
+                        <th>Priority</th>
+                        <th>Added By</th>
+                        <th>Added At</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in entry_rows %}
+                        <tr>
+                            <td>{{ row.position }}</td>
+                            <td>{{ row.entry.patient.full_name }}</td>
+                            <td>{{ row.entry.get_priority_display }}</td>
+                            <td>{{ row.entry.added_by }}</td>
+                            <td>{{ row.entry.created_at }}</td>
+                            <td>
+                                <a href="{% url 'waiting_room_remove' row.entry.pk %}" class="btn btn-sm btn-error text-white">
+                                    Remove
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">No patients in waiting room.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

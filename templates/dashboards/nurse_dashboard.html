@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Nurse Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Nurse Dashboard</h1>
+        <p class="text-base-content/70">Overview of patients, waiting room, and shift information.</p>
+    </div>
+
+    {% if is_overloaded %}
+        <div class="alert alert-warning shadow-sm">
+            <span>Too many patients in the waiting room. Please take action.</span>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Patients Created</h2>
+                <p class="text-3xl font-bold">{{ patients_created_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Active Waiting Room</h2>
+                <p class="text-3xl font-bold">{{ active_waiting_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">My Role</h2>
+                <p class="text-2xl font-semibold">{{ request.user.get_role_display }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Patients</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Hospital No.</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in recent_patients %}
+                                <tr>
+                                    <td>{{ patient.hospital_number }}</td>
+                                    <td>
+                                        <a class="link link-primary" href="{% url 'patient_detail' patient.pk %}">
+                                            {{ patient.full_name }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="2">No patients yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Waiting Room Snapshot</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in recent_waiting_entries %}
+                                <tr>
+                                    <td>{{ entry.patient.full_name }}</td>
+                                    <td>{{ entry.get_priority_display }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="2">No active waiting entries.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

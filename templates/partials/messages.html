@@ -1,0 +1,9 @@
+{% if messages %}
+    <div class="space-y-2 mb-4">
+        {% for message in messages %}
+            <div class="alert alert-success shadow-sm">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
