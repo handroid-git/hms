@@ -4,6 +4,7 @@ from apps.accounts.models import Role
 from apps.consultations.models import Consultation
 from apps.laboratory.models import LabRequest
 from apps.patients.models import Patient
+from apps.pharmacy.models import PrescriptionItem
 from apps.waiting_room.models import WaitingRoomEntry
 from apps.waiting_room.services import waiting_room_is_overloaded
 
@@ -72,6 +73,16 @@ def doctor_dashboard(request):
         ],
     ).select_related("patient", "consultation").order_by("-updated_at")
 
+    pending_prescriptions = PrescriptionItem.objects.filter(
+        consultation__doctor=request.user,
+        consultation__status=Consultation.Status.IN_PROGRESS,
+        status__in=[
+            PrescriptionItem.Status.AWAITING_PAYMENT,
+            PrescriptionItem.Status.READY_TO_ISSUE,
+            PrescriptionItem.Status.UNAVAILABLE,
+        ],
+    ).select_related("patient", "drug").order_by("-updated_at")[:10]
+
     context = {
         "active_waiting_count": active_waiting_count,
         "in_progress_consultations": in_progress_consultations,
@@ -79,6 +90,7 @@ def doctor_dashboard(request):
         "total_bill_generated": total_bill_generated,
         "next_patients": next_patients,
         "doctor_lab_reviews": doctor_lab_reviews,
+        "pending_prescriptions": pending_prescriptions,
         "is_overloaded": waiting_room_is_overloaded(),
     }
     return render(request, "dashboards/doctor_dashboard.html", context)

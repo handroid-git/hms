@@ -71,6 +71,12 @@
                     <li><a href="{% url 'lab_test_create' %}">Create Lab Test</a></li>
                 {% endif %}
 
+                {% if request.user.role == "PHARMACIST" or request.user.is_superuser %}
+                    <li><a href="{% url 'pharmacy_dashboard' %}">Pharmacy Dashboard</a></li>
+                    <li><a href="{% url 'drug_list' %}">Drugs</a></li>
+                    <li><a href="{% url 'drug_create' %}">Create Drug</a></li>
+                {% endif %}
+
                 <li><a href="{% url 'profile' %}">My Profile</a></li>
             </ul>
         </aside>

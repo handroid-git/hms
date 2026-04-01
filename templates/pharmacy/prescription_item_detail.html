@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Prescription Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+    <div>
+        <h1 class="text-3xl font-bold">Prescription Item</h1>
+        <p class="text-base-content/70">{{ item.patient.full_name }} — {{ item.drug.name }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Prescription Info</h2>
+                <p><strong>Patient:</strong> {{ item.patient.full_name }}</p>
+                <p><strong>Drug:</strong> {{ item.drug.name }}</p>
+                <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+                <p><strong>Unit Price:</strong> ₦{{ item.unit_price }}</p>
+                <p><strong>Total Price:</strong> ₦{{ item.total_price }}</p>
+                <p><strong>Status:</strong> {{ item.get_status_display }}</p>
+                <p><strong>Payment Status:</strong> {{ item.consultation.billing.get_payment_status_display }}</p>
+                <p><strong>Amount Paid:</strong> ₦{{ item.consultation.billing.amount_paid }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Stock Info</h2>
+                <p><strong>Stock Quantity:</strong> {{ item.drug.stock_quantity }}</p>
+                <p><strong>Low Stock Threshold:</strong> {{ item.drug.low_stock_threshold }}</p>
+                <p><strong>Expiration Date:</strong> {{ item.drug.expiration_date|default:"-" }}</p>
+                <p><strong>Paid:</strong> {{ paid|yesno:"Yes,No" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Update Prescription Item</h2>
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="{% if field.name == 'instructions' or field.name == 'unavailable_note' %}md:col-span-2{% endif %}">
+                        <label class="label"><span class="label-text">{{ field.label }}</span></label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="md:col-span-2">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if item.status == "READY_TO_ISSUE" and paid %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Issue Drug</h2>
+                <form method="post" action="{% url 'prescription_issue' item.pk %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% csrf_token %}
+                    {% for field in issue_form %}
+                        <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
+                            <label class="label"><span class="label-text">{{ field.label }}</span></label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn btn-success text-white">Issue Drug</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if item.status == "ISSUED" and item.issue_record %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Issue Record</h2>
+                <p><strong>Received By:</strong> {{ item.issue_record.received_by_name|default:"-" }}</p>
+                <p><strong>Receiver Phone:</strong> {{ item.issue_record.received_by_phone|default:"-" }}</p>
+                <p><strong>Notes:</strong> {{ item.issue_record.notes|default:"-" }}</p>
+                <p><strong>Issued Stamp:</strong> {{ item.issue_record.issued_by_stamp }}</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

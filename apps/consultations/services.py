@@ -2,13 +2,11 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from apps.billing.models import Billing
-from apps.consultations.models import Consultation
 from apps.patients.models import Patient, PatientRecord
 from apps.waiting_room.models import WaitingRoomEntry
+from .models import Consultation
 
 DEFAULT_CONSULTATION_FEE = Decimal("5000.00")
-DEFAULT_LAB_TEST_PRICE = Decimal("2000.00")
-DEFAULT_PRESCRIPTION_PRICE = Decimal("1500.00")
 DEFAULT_MEDICATION_PRICE = Decimal("2500.00")
 
 
@@ -116,23 +114,12 @@ def start_consultation_for_next_patient(doctor):
 def update_consultation_billing(consultation):
     billing = consultation.billing
 
-    lab_total = Decimal("0.00")
-    prescription_total = Decimal("0.00")
     medication_total = Decimal("0.00")
-
-    if consultation.laboratory_tests.strip():
-        lab_total = DEFAULT_LAB_TEST_PRICE
-
-    if consultation.prescriptions.strip():
-        prescription_total = DEFAULT_PRESCRIPTION_PRICE
-
     if consultation.medication.strip():
         medication_total = DEFAULT_MEDICATION_PRICE
 
-    billing.lab_total = lab_total
-    billing.prescription_total = prescription_total
-    billing.medication_total = medication_total
     billing.consultation_fee = consultation.consultation_fee
+    billing.medication_total = medication_total
     billing.recalculate_total()
     billing.save()
 
@@ -190,9 +177,7 @@ def complete_consultation(consultation):
         record.pulse = triage.pulse
         record.weight = triage.weight
         record.body_temperature = triage.body_temperature
-        record.notes = "\n\n".join(
-            [text for text in [triage.notes, consultation.notes] if text]
-        )
+        record.notes = "\n\n".join([text for text in [triage.notes, consultation.notes] if text])
     else:
         record.notes = consultation.notes
 

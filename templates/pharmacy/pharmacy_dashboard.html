@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Pharmacy Dashboard</h1>
+        <p class="text-base-content/70">Manage prescriptions, issue drugs, and monitor stock.</p>
+    </div>
+
+    {% if low_stock_drugs %}
+        <div class="alert alert-warning shadow-sm">
+            <span>Some drugs are low in stock.</span>
+        </div>
+    {% endif %}
+
+    {% if expired_drugs %}
+        <div class="alert alert-error shadow-sm">
+            <span>Some drugs are expired.</span>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Drugs Issued Today</h2>
+                <p class="text-3xl font-bold">{{ issued_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">All-Time Drug Issues</h2>
+                <p class="text-3xl font-bold">{{ issued_all_time }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Prescription Queue</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Drug</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_items %}
+                            <tr>
+                                <td>{{ item.patient.full_name }}</td>
+                                <td>{{ item.drug.name }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'prescription_item_detail' item.pk %}" class="btn btn-sm btn-outline">Open</a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">No pending pharmacy work.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

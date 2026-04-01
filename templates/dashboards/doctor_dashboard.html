@@ -135,5 +135,33 @@
             </div>
         </div>
     </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Prescriptions Requiring Pharmacy Action</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Drug</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_prescriptions %}
+                            <tr>
+                                <td>{{ item.patient.full_name }}</td>
+                                <td>{{ item.drug.name }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3">No pharmacy actions pending.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

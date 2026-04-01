@@ -129,6 +129,36 @@
         </div>
     {% endif %}
 
+    {% if prescription_items %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Prescriptions</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Drug</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in prescription_items %}
+                                <tr>
+                                    <td>{{ item.drug.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.get_status_display }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No prescriptions selected.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Update Consultation</h2>
@@ -136,8 +166,8 @@
                 {% csrf_token %}
 
                 {% for field in form %}
-                    {% if field.name != "medication" and field.name != "selected_lab_tests" %}
-                        <div class="{% if field.name == 'complaint' or field.name == 'diagnosis' or field.name == 'prescriptions' or field.name == 'notes' %}md:col-span-2{% endif %}">
+                    {% if field.name != "medication" and field.name != "selected_lab_tests" and field.name != "selected_drugs" %}
+                        <div class="{% if field.name == 'complaint' or field.name == 'diagnosis' or field.name == 'notes' %}md:col-span-2{% endif %}">
                             <label class="label">
                                 <span class="label-text">{{ field.label }}</span>
                             </label>
@@ -150,12 +180,18 @@
                 {% endfor %}
 
                 <div class="md:col-span-2">
-                    <label class="label">
-                        <span class="label-text">Laboratory Tests</span>
-                    </label>
+                    <label class="label"><span class="label-text">Laboratory Tests</span></label>
                     {{ form.selected_lab_tests }}
                     {% if form.selected_lab_tests.errors %}
                         <p class="text-error text-sm mt-1">{{ form.selected_lab_tests.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label"><span class="label-text">Prescriptions</span></label>
+                    {{ form.selected_drugs }}
+                    {% if form.selected_drugs.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.selected_drugs.errors|join:", " }}</p>
                     {% endif %}
                 </div>
 

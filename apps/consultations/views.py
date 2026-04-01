@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from apps.accounts.models import Role
 from apps.laboratory.services import sync_lab_requests_for_consultation
+from apps.pharmacy.services import sync_prescriptions_for_consultation
 from .forms import ConsultationUpdateForm
 from .models import Consultation
 from .services import (
@@ -44,6 +45,7 @@ def consultation_detail(request, pk):
         triage_record = consultation.waiting_room_entry.triage_record
 
     lab_request = consultation.lab_requests.prefetch_related("items__lab_test", "items__attachments").first()
+    prescription_items = consultation.prescription_items.select_related("drug").all()
 
     if request.method == "POST":
         form = ConsultationUpdateForm(request.POST, instance=consultation)
@@ -51,7 +53,10 @@ def consultation_detail(request, pk):
             consultation = form.save()
 
             selected_tests = form.cleaned_data.get("selected_lab_tests")
+            selected_drugs = form.cleaned_data.get("selected_drugs")
+
             sync_lab_requests_for_consultation(consultation, selected_tests, request.user)
+            sync_prescriptions_for_consultation(consultation, selected_drugs, request.user)
 
             update_consultation_billing(consultation)
             messages.success(request, "Consultation updated successfully.")
@@ -67,6 +72,7 @@ def consultation_detail(request, pk):
             "form": form,
             "triage_record": triage_record,
             "lab_request": lab_request,
+            "prescription_items": prescription_items,
         },
     )
 
