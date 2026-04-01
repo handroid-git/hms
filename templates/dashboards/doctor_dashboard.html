@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+            <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
+            <p class="text-base-content/70">Consult patients, manage active workflow, and monitor billing impact.</p>
+        </div>
+        <a href="{% url 'doctor_consultation_start' %}" class="btn btn-primary">
+            Start Next Consultation
+        </a>
+    </div>
+
+    {% if is_overloaded %}
+        <div class="alert alert-warning shadow-sm">
+            <span>Too many patients are waiting. Please attend urgently.</span>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Waiting Patients</h2>
+                <p class="text-3xl font-bold">{{ active_waiting_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Completed Consultations</h2>
+                <p class="text-3xl font-bold">{{ completed_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Bill Generated</h2>
+                <p class="text-3xl font-bold">₦{{ total_bill_generated }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">My Active Consultations</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Started</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for consultation in in_progress_consultations %}
+                                <tr>
+                                    <td>{{ consultation.patient.full_name }}</td>
+                                    <td>{{ consultation.consulted_at }}</td>
+                                    <td>
+                                        <a href="{% url 'consultation_detail' consultation.pk %}" class="btn btn-sm btn-outline">
+                                            Open
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No consultations in progress.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Next Patients in Queue</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Priority</th>
+                                <th>Assigned Doctor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in next_patients %}
+                                <tr>
+                                    <td>{{ entry.patient.full_name }}</td>
+                                    <td>{{ entry.get_priority_display }}</td>
+                                    <td>{{ entry.assigned_doctor|default:"-" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No waiting patients.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Lab Results Requiring Attention</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in doctor_lab_reviews %}
+                            <tr>
+                                <td>{{ request.patient.full_name }}</td>
+                                <td>{{ request.get_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'consultation_detail' request.consultation.pk %}" class="btn btn-sm btn-outline">
+                                        Review
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3">No lab items awaiting attention.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

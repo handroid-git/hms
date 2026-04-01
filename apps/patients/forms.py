@@ -1,5 +1,5 @@
 from django import forms
-from .models import Patient, PatientRecord
+from .models import Patient
 
 
 class PatientForm(forms.ModelForm):
@@ -30,31 +30,4 @@ class PatientForm(forms.ModelForm):
             "next_of_kin": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "next_of_kin_phone": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "admission_status": forms.Select(attrs={"class": "select select-bordered w-full"}),
-        }
-
-
-class PatientRecordForm(forms.ModelForm):
-    class Meta:
-        model = PatientRecord
-        fields = [
-            "blood_pressure",
-            "pulse",
-            "weight",
-            "body_temperature",
-            "diagnosis",
-            "medication",
-            "laboratory_tests",
-            "admitted",
-            "discharged",
-            "died",
-            "given_birth",
-        ]
-        widgets = {
-            "blood_pressure": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
-            "pulse": forms.NumberInput(attrs={"class": "input input-bordered w-full"}),
-            "weight": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
-            "body_temperature": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.1"}),
-            "diagnosis": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
-            "medication": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
-            "laboratory_tests": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
         }

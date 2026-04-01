@@ -49,10 +49,28 @@
 
             <ul class="menu p-4 gap-1">
                 <li><a href="{% url 'dashboard_redirect' %}">Dashboard</a></li>
-                <li><a href="{% url 'patient_list' %}">Patients</a></li>
-                <li><a href="{% url 'patient_create' %}">Create Patient</a></li>
-                <li><a href="{% url 'waiting_room_list' %}">Waiting Room</a></li>
-                <li><a href="{% url 'waiting_room_add' %}">Add to Waiting Room</a></li>
+
+                {% if request.user.role == "NURSE" or request.user.role == "DOCTOR" or request.user.is_superuser %}
+                    <li><a href="{% url 'patient_list' %}">Patients</a></li>
+                {% endif %}
+
+                {% if request.user.role == "NURSE" or request.user.is_superuser %}
+                    <li><a href="{% url 'patient_create' %}">Create Patient</a></li>
+                    <li><a href="{% url 'waiting_room_list' %}">Waiting Room</a></li>
+                    <li><a href="{% url 'waiting_room_add' %}">Add to Waiting Room</a></li>
+                {% endif %}
+
+                {% if request.user.role == "DOCTOR" or request.user.is_superuser %}
+                    <li><a href="{% url 'doctor_dashboard' %}">Doctor Dashboard</a></li>
+                    <li><a href="{% url 'doctor_consultation_start' %}">Start Consultation</a></li>
+                {% endif %}
+
+                {% if request.user.role == "LAB_TECHNICIAN" or request.user.is_superuser %}
+                    <li><a href="{% url 'lab_dashboard' %}">Lab Dashboard</a></li>
+                    <li><a href="{% url 'lab_test_list' %}">Lab Tests</a></li>
+                    <li><a href="{% url 'lab_test_create' %}">Create Lab Test</a></li>
+                {% endif %}
+
                 <li><a href="{% url 'profile' %}">My Profile</a></li>
             </ul>
         </aside>

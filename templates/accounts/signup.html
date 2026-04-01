@@ -1,0 +1,47 @@
+{% load tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Signup - HMS</title>
+    {% tailwind_css %}
+</head>
+<body class="min-h-screen bg-base-200 flex items-center justify-center px-4 py-10">
+    <div class="card w-full max-w-3xl bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h1 class="text-3xl font-bold text-center">Staff Signup</h1>
+            <p class="text-center text-base-content/70">
+                Create a staff account request. Access will only be granted after administrator verification.
+            </p>
+
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="{% if field.name == 'password1' or field.name == 'password2' %}md:col-span-1{% endif %}">
+                        <label class="label">
+                            <span class="label-text">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="text-xs text-base-content/60 mt-1">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <div class="md:col-span-2">
+                    <button type="submit" class="btn btn-primary w-full">Submit Signup Request</button>
+                </div>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'login' %}" class="link link-primary">Already have an account? Login</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Consultation Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+            <h1 class="text-3xl font-bold">Consultation</h1>
+            <p class="text-base-content/70">{{ consultation.patient.full_name }} — {{ consultation.consulted_by_stamp }}</p>
+        </div>
+        <a href="{% url 'consultation_complete' consultation.pk %}" class="btn btn-success text-white">
+            Mark Complete
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Patient Info</h2>
+                <p><strong>Name:</strong> {{ consultation.patient.full_name }}</p>
+                <p><strong>Hospital Number:</strong> {{ consultation.patient.hospital_number }}</p>
+                <p><strong>Status:</strong> {{ consultation.get_status_display }}</p>
+                <p><strong>Admission Status:</strong> {{ consultation.patient.get_admission_status_display }}</p>
+                <p><strong>Days Admitted:</strong> {{ consultation.patient.admitted_days }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Nurse Vital Signs</h2>
+                {% if triage_record %}
+                    <p><strong>Blood Pressure:</strong> {{ triage_record.blood_pressure|default:"-" }}</p>
+                    <p><strong>Pulse:</strong> {{ triage_record.pulse|default:"-" }}</p>
+                    <p><strong>Weight:</strong> {{ triage_record.weight|default:"-" }}</p>
+                    <p><strong>Body Temperature:</strong> {{ triage_record.body_temperature|default:"-" }}</p>
+                    <p><strong>Triage Notes:</strong> {{ triage_record.notes|default:"-" }}</p>
+                    <p><strong>Recorded By:</strong> {{ triage_record.created_by }}</p>
+                {% else %}
+                    <p>No triage vitals recorded for this session.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Billing Snapshot</h2>
+                <p><strong>Consultation Fee:</strong> ₦{{ consultation.billing.consultation_fee }}</p>
+                <p><strong>Lab Total:</strong> ₦{{ consultation.billing.lab_total }}</p>
+                <p><strong>Prescription Total:</strong> ₦{{ consultation.billing.prescription_total }}</p>
+                <p><strong>Medication Total:</strong> ₦{{ consultation.billing.medication_total }}</p>
+                <p><strong>Total:</strong> ₦{{ consultation.billing.total_amount }}</p>
+                <p><strong>Payment Status:</strong> {{ consultation.billing.get_payment_status_display }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if lab_request %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Lab Request Status</h2>
+                <p><strong>Status:</strong> {{ lab_request.get_status_display }}</p>
+
+                <div class="overflow-x-auto mt-3">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Test</th>
+                                <th>Status</th>
+                                <th>Result</th>
+                                <th>Files</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in lab_request.items.all %}
+                                <tr>
+                                    <td>{{ item.lab_test.name }}</td>
+                                    <td>{{ item.get_status_display }}</td>
+                                    <td>
+                                        {% if item.status == "UNAVAILABLE" %}
+                                            {{ item.unavailable_note|default:"Not available" }}
+                                        {% else %}
+                                            {{ item.result_text|default:"Pending" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.attachments.all %}
+                                            <ul class="list-disc ml-4">
+                                                {% for attachment in item.attachments.all %}
+                                                    <li>
+                                                        <a class="link link-primary" href="{{ attachment.file.url }}" target="_blank">
+                                                            File {{ forloop.counter }}
+                                                        </a>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.status == "READY" %}
+                                            <div class="flex gap-2">
+                                                <a href="{% url 'doctor_accept_lab_result' item.pk %}" class="btn btn-sm btn-success text-white">
+                                                    Accept
+                                                </a>
+                                                <a href="{% url 'doctor_reject_lab_result' item.pk %}" class="btn btn-sm btn-error text-white">
+                                                    Reject
+                                                </a>
+                                            </div>
+                                        {% elif item.status == "REJECTED" %}
+                                            <span class="text-warning text-sm">Awaiting new upload</span>
+                                        {% elif item.status == "ACCEPTED" %}
+                                            <span class="text-success text-sm">Accepted</span>
+                                        {% elif item.status == "UNAVAILABLE" %}
+                                            <span class="text-error text-sm">Unavailable</span>
+                                        {% else %}
+                                            <span class="text-sm">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5">No lab tests selected.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Update Consultation</h2>
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    {% if field.name != "medication" and field.name != "selected_lab_tests" %}
+                        <div class="{% if field.name == 'complaint' or field.name == 'diagnosis' or field.name == 'prescriptions' or field.name == 'notes' %}md:col-span-2{% endif %}">
+                            <label class="label">
+                                <span class="label-text">{{ field.label }}</span>
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <div class="md:col-span-2">
+                    <label class="label">
+                        <span class="label-text">Laboratory Tests</span>
+                    </label>
+                    {{ form.selected_lab_tests }}
+                    {% if form.selected_lab_tests.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.selected_lab_tests.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div id="medication-wrapper" class="md:col-span-2 hidden">
+                    <label class="label">
+                        <span class="label-text">{{ form.medication.label }}</span>
+                    </label>
+                    {{ form.medication }}
+                    {% if form.medication.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.medication.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <button type="submit" class="btn btn-primary">Save Consultation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const admittedCheckbox = document.getElementById("id_admitted");
+        const medicationWrapper = document.getElementById("medication-wrapper");
+
+        function toggleMedication() {
+            if (admittedCheckbox && admittedCheckbox.checked) {
+                medicationWrapper.classList.remove("hidden");
+            } else {
+                medicationWrapper.classList.add("hidden");
+            }
+        }
+
+        if (admittedCheckbox) {
+            admittedCheckbox.addEventListener("change", toggleMedication);
+            toggleMedication();
+        }
+    });
+</script>
+{% endblock %}

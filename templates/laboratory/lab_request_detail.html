@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Lab Request Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Lab Request</h1>
+        <p class="text-base-content/70">{{ lab_request.patient.full_name }} — {{ lab_request.get_status_display }}</p>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Test</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ item.lab_test.name }}</td>
+                            <td>₦{{ item.price }}</td>
+                            <td>{{ item.get_status_display }}</td>
+                            <td>
+                                {% if item.status != "ACCEPTED" %}
+                                    <a href="{% url 'lab_result_update' item.pk %}" class="btn btn-sm btn-primary">Update Result</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% if item.result_text %}
+                            <tr>
+                                <td colspan="4"><strong>Result:</strong> {{ item.result_text }}</td>
+                            </tr>
+                        {% endif %}
+
+                        {% if item.unavailable_note %}
+                            <tr>
+                                <td colspan="4"><strong>Unavailable Note:</strong> {{ item.unavailable_note }}</td>
+                            </tr>
+                        {% endif %}
+
+                        {% if item.attachments.all %}
+                            <tr>
+                                <td colspan="4">
+                                    <strong>Files:</strong>
+                                    <ul class="list-disc ml-6">
+                                        {% for attachment in item.attachments.all %}
+                                            <li>
+                                                <a class="link link-primary" href="{{ attachment.file.url }}" target="_blank">
+                                                    {{ attachment.file.name }}
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% empty %}
+                        <tr><td colspan="4">No lab items found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

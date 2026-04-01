@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Update Lab Result{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">Update Result for {{ item.lab_test.name }}</h1>
+
+            <form method="post" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="label"><span class="label-text">Status</span></label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.status.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Result Text</span></label>
+                    {{ form.result_text }}
+                    {% if form.result_text.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.result_text.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Unavailable Note</span></label>
+                    {{ form.unavailable_note }}
+                    {% if form.unavailable_note.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.unavailable_note.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Upload Files</span></label>
+                    <div id="file-inputs" class="space-y-2">
+                        <input type="file" name="attachments" class="file-input file-input-bordered w-full">
+                    </div>
+                    <button type="button" id="add-file-input" class="btn btn-outline btn-sm mt-2">
+                        Add Another File
+                    </button>
+                    {% if form.attachments.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.attachments.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                {% if item.attachments.all %}
+                    <div>
+                        <p class="font-semibold mb-2">Existing Files</p>
+                        <ul class="list-disc ml-6">
+                            {% for attachment in item.attachments.all %}
+                                <li>
+                                    <a class="link link-primary" href="{{ attachment.file.url }}" target="_blank">
+                                        {{ attachment.file.name }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary">Save Result</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const addButton = document.getElementById("add-file-input");
+        const container = document.getElementById("file-inputs");
+
+        addButton.addEventListener("click", function () {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.name = "attachments";
+            input.className = "file-input file-input-bordered w-full";
+            container.appendChild(input);
+        });
+    });
+</script>
+{% endblock %}

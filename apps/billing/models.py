@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from apps.patients.models import Patient
+from apps.consultations.models import Consultation
 
 
 class Billing(models.Model):
@@ -13,7 +14,19 @@ class Billing(models.Model):
         DEPOSIT = "DEPOSIT", "Deposit"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="billings")
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="billings",
+    )
+    consultation = models.OneToOneField(
+        Consultation,
+        on_delete=models.CASCADE,
+        related_name="billing",
+        null=True,
+        blank=True,
+    )
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -30,6 +43,7 @@ class Billing(models.Model):
 
     consultation_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     lab_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    prescription_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     medication_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     other_charges = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
@@ -46,10 +60,11 @@ class Billing(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def calculate_total(self):
+    def recalculate_total(self):
         self.total_amount = (
             self.consultation_fee
             + self.lab_total
+            + self.prescription_total
             + self.medication_total
             + self.other_charges
             - self.discount

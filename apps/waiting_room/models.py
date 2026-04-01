@@ -1,6 +1,7 @@
 import uuid
 from django.conf import settings
 from django.db import models
+from apps.accounts.models import Role
 from apps.patients.models import Patient
 
 
@@ -21,6 +22,15 @@ class WaitingRoomEntry(models.Model):
     priority = models.IntegerField(choices=Priority.choices, default=Priority.NORMAL)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.WAITING)
     is_active = models.BooleanField(default=True)
+
+    assigned_doctor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_waiting_entries",
+        limit_choices_to={"role": Role.DOCTOR},
+    )
 
     added_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

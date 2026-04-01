@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">{{ title }}</h1>
+
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="label"><span class="label-text">Patient</span></label>
+                    {{ form.patient }}
+                    {% if form.patient.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.patient.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Priority</span></label>
+                    {{ form.priority }}
+                    {% if form.priority.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.priority.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label"><span class="label-text">Assigned Doctor</span></label>
+                    {{ form.assigned_doctor }}
+                    {% if form.assigned_doctor.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.assigned_doctor.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <h2 class="text-lg font-semibold mt-2">Vital Signs Before Waiting Room</h2>
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Blood Pressure</span></label>
+                    {{ form.blood_pressure }}
+                    {% if form.blood_pressure.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.blood_pressure.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Pulse</span></label>
+                    {{ form.pulse }}
+                    {% if form.pulse.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.pulse.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Weight</span></label>
+                    {{ form.weight }}
+                    {% if form.weight.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.weight.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Body Temperature</span></label>
+                    {{ form.body_temperature }}
+                    {% if form.body_temperature.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.body_temperature.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label"><span class="label-text">Triage Notes</span></label>
+                    {{ form.triage_notes }}
+                    {% if form.triage_notes.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.triage_notes.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <button type="submit" class="btn btn-primary">Save and Add to Waiting Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

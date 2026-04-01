@@ -1,0 +1,27 @@
+{% load tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Verification - HMS</title>
+    {% tailwind_css %}
+</head>
+<body class="min-h-screen bg-base-200 flex items-center justify-center px-4">
+    <div class="card w-full max-w-lg bg-base-100 shadow-xl">
+        <div class="card-body text-center">
+            <h1 class="text-3xl font-bold">Account Pending Verification</h1>
+            <p class="text-base-content/70 mt-2">
+                Your signup request has been received and is awaiting administrator approval.
+            </p>
+            <p class="text-base-content/70">
+                You will only be able to log in after your account has been verified.
+            </p>
+
+            <div class="mt-6">
+                <a href="{% url 'home' %}" class="btn btn-primary">Return Home</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

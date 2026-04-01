@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from apps.patients.models import TriageRecord
 from .forms import WaitingRoomEntryForm
 from .models import WaitingRoomEntry
 from .services import (
@@ -39,14 +40,26 @@ def waiting_room_add(request):
             entry = form.save(commit=False)
             entry.added_by = request.user
             entry.save()
-            messages.success(request, "Patient added to waiting room.")
+
+            TriageRecord.objects.create(
+                patient=entry.patient,
+                waiting_room_entry=entry,
+                blood_pressure=form.cleaned_data.get("blood_pressure", ""),
+                pulse=form.cleaned_data.get("pulse"),
+                weight=form.cleaned_data.get("weight"),
+                body_temperature=form.cleaned_data.get("body_temperature"),
+                notes=form.cleaned_data.get("triage_notes", ""),
+                created_by=request.user,
+            )
+
+            messages.success(request, "Patient added to waiting room with vital signs.")
             return redirect("waiting_room_list")
     else:
         form = WaitingRoomEntryForm()
 
     return render(
         request,
-        "patients/patient_form.html",
+        "waiting_room/waiting_room_form.html",
         {
             "form": form,
             "title": "Add Patient to Waiting Room",

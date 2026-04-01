@@ -1,25 +1,47 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from .forms import PatientForm, PatientRecordForm
+from .forms import PatientForm
 from .models import Patient
 
 
 @login_required
 def patient_list(request):
+    query = request.GET.get("q", "").strip()
+
     patients = Patient.objects.all().order_by("-created_at")
-    return render(request, "patients/patient_list.html", {"patients": patients})
+
+    if query:
+        patients = patients.filter(
+            Q(hospital_number__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(phone_number__icontains=query)
+        )
+
+    return render(
+        request,
+        "patients/patient_list.html",
+        {
+            "patients": patients,
+            "query": query,
+        },
+    )
 
 
 @login_required
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
-    records = patient.records.all().order_by("-created_at")
+    records = patient.records.select_related("created_by", "edited_by", "consultation").order_by("-created_at")
+
     return render(
         request,
         "patients/patient_detail.html",
-        {"patient": patient, "records": records},
+        {
+            "patient": patient,
+            "records": records,
+        },
     )
 
 
@@ -55,26 +77,3 @@ def patient_update(request, pk):
         form = PatientForm(instance=patient)
 
     return render(request, "patients/patient_form.html", {"form": form, "title": "Update Patient"})
-
-
-@login_required
-def patient_record_create(request, patient_pk):
-    patient = get_object_or_404(Patient, pk=patient_pk)
-
-    if request.method == "POST":
-        form = PatientRecordForm(request.POST)
-        if form.is_valid():
-            record = form.save(commit=False)
-            record.patient = patient
-            record.created_by = request.user
-            record.save()
-            messages.success(request, "Patient record added successfully.")
-            return redirect("patient_detail", pk=patient.pk)
-    else:
-        form = PatientRecordForm()
-
-    return render(
-        request,
-        "patients/patient_record_form.html",
-        {"form": form, "patient": patient},
-    )
