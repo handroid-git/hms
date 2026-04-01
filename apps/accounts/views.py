@@ -44,7 +44,7 @@ def dashboard_redirect(request):
     elif role == Role.DOCTOR:
         return redirect("doctor_dashboard")
     elif role == Role.ACCOUNTANT:
-        return redirect("admin:index")
+        return redirect("accountant_dashboard")
     elif role == Role.LAB_TECHNICIAN:
         return redirect("lab_dashboard")
     elif role == Role.PHARMACIST:

@@ -1,0 +1,29 @@
+from django import forms
+from .models import Billing, PaymentTransaction
+
+
+class BillingUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Billing
+        fields = ["other_charges", "discount"]
+        widgets = {
+            "other_charges": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
+            "discount": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
+        }
+
+
+class PaymentTransactionForm(forms.ModelForm):
+    class Meta:
+        model = PaymentTransaction
+        fields = ["amount", "payment_type", "notes"]
+        widgets = {
+            "amount": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
+            "payment_type": forms.Select(attrs={"class": "select select-bordered w-full"}),
+            "notes": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+        }
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if amount <= 0:
+            raise forms.ValidationError("Payment amount must be greater than zero.")
+        return amount

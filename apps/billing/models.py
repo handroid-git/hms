@@ -50,6 +50,7 @@ class Billing(models.Model):
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
 
     payment_status = models.CharField(
         max_length=20,
@@ -69,7 +70,69 @@ class Billing(models.Model):
             + self.other_charges
             - self.discount
         )
+        if self.total_amount < Decimal("0.00"):
+            self.total_amount = Decimal("0.00")
+
+        self.balance = self.total_amount - self.amount_paid
+        if self.balance < Decimal("0.00"):
+            self.balance = Decimal("0.00")
+
+        if self.amount_paid <= Decimal("0.00"):
+            self.payment_status = self.PaymentStatus.UNPAID
+        elif self.amount_paid >= self.total_amount and self.total_amount > Decimal("0.00"):
+            self.payment_status = self.PaymentStatus.PAID_FULL
+        elif self.amount_paid < self.total_amount:
+            last_payment = self.payments.order_by("-created_at").first()
+            if last_payment and last_payment.payment_type == PaymentTransaction.PaymentType.DEPOSIT:
+                self.payment_status = self.PaymentStatus.DEPOSIT
+            else:
+                self.payment_status = self.PaymentStatus.PART_PAYMENT
+
         return self.total_amount
+
+    @property
+    def handled_by_stamp(self):
+        if self.handled_by:
+            return f"{self.handled_by.get_full_name() or self.handled_by.username} | {self.updated_at:%Y-%m-%d %H:%M}"
+        return "Not yet handled"
 
     def __str__(self):
         return f"Billing - {self.patient.full_name}"
+
+
+class PaymentTransaction(models.Model):
+    class PaymentType(models.TextChoices):
+        DEPOSIT = "DEPOSIT", "Deposit"
+        PART_PAYMENT = "PART_PAYMENT", "Part Payment"
+        FULL_PAYMENT = "FULL_PAYMENT", "Full Payment"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    billing = models.ForeignKey(
+        Billing,
+        on_delete=models.CASCADE,
+        related_name="payments",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    payment_type = models.CharField(
+        max_length=20,
+        choices=PaymentType.choices,
+    )
+    notes = models.TextField(blank=True)
+
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="payments_received",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def received_by_stamp(self):
+        if self.received_by:
+            return f"{self.received_by.get_full_name() or self.received_by.username} | {self.created_at:%Y-%m-%d %H:%M}"
+        return "Unknown"
+
+    def __str__(self):
+        return f"{self.get_payment_type_display()} - {self.billing.patient.full_name}"

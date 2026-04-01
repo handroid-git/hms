@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Billing Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Billing Dashboard</h1>
+        <p class="text-base-content/70">Overview of bill generation and payment processing.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Generated Today</h2>
+                <p class="text-3xl font-bold">₦{{ total_generated_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Paid Today</h2>
+                <p class="text-3xl font-bold">₦{{ total_paid_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Bills Count Today</h2>
+                <p class="text-3xl font-bold">{{ bills_today_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">All-Time Processed</h2>
+                <p class="text-3xl font-bold">{{ all_time_processed }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

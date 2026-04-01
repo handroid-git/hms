@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Accountant Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Accountant Dashboard</h1>
+        <p class="text-base-content/70">Manage bills, payments, discounts, and outstanding balances.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Generated Today</h2>
+                <p class="text-3xl font-bold">₦{{ total_generated_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Paid Today</h2>
+                <p class="text-3xl font-bold">₦{{ total_paid_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Bills Today</h2>
+                <p class="text-3xl font-bold">{{ bills_today_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">All-Time Processed</h2>
+                <p class="text-3xl font-bold">{{ all_time_processed }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="flex justify-between items-center">
+                <h2 class="card-title">Recent Bills</h2>
+                <a href="{% url 'billing_list' %}" class="btn btn-primary btn-sm">Open Billing</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Total</th>
+                            <th>Paid</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in recent_bills %}
+                            <tr>
+                                <td>{{ bill.patient.full_name }}</td>
+                                <td>₦{{ bill.total_amount }}</td>
+                                <td>₦{{ bill.amount_paid }}</td>
+                                <td>{{ bill.get_payment_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">View</a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No bills found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Billing Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <div>
+        <h1 class="text-3xl font-bold">Billing Detail</h1>
+        <p class="text-base-content/70">{{ billing.patient.full_name }} — {{ billing.patient.hospital_number }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Bill Summary</h2>
+                <p><strong>Consultation Fee:</strong> ₦{{ billing.consultation_fee }}</p>
+                <p><strong>Lab Total:</strong> ₦{{ billing.lab_total }}</p>
+                <p><strong>Prescription Total:</strong> ₦{{ billing.prescription_total }}</p>
+                <p><strong>Medication Total:</strong> ₦{{ billing.medication_total }}</p>
+                <p><strong>Other Charges:</strong> ₦{{ billing.other_charges }}</p>
+                <p><strong>Discount:</strong> ₦{{ billing.discount }}</p>
+                <p><strong>Total Amount:</strong> ₦{{ billing.total_amount }}</p>
+                <p><strong>Amount Paid:</strong> ₦{{ billing.amount_paid }}</p>
+                <p><strong>Balance:</strong> ₦{{ billing.balance }}</p>
+                <p><strong>Status:</strong> {{ billing.get_payment_status_display }}</p>
+                <p><strong>Handled By Stamp:</strong> {{ billing.handled_by_stamp }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Update Bill</h2>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    {{ billing_form.non_field_errors }}
+
+                    <div>
+                        <label class="label"><span class="label-text">Other Charges</span></label>
+                        {{ billing_form.other_charges }}
+                        {% if billing_form.other_charges.errors %}
+                            <p class="text-error text-sm mt-1">{{ billing_form.other_charges.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Discount</span></label>
+                        {{ billing_form.discount }}
+                        {% if billing_form.discount.errors %}
+                            <p class="text-error text-sm mt-1">{{ billing_form.discount.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" name="update_billing" class="btn btn-primary">Save Billing Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Receive Payment</h2>
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% csrf_token %}
+                <div>
+                    <label class="label"><span class="label-text">Amount</span></label>
+                    {{ payment_form.amount }}
+                    {% if payment_form.amount.errors %}
+                        <p class="text-error text-sm mt-1">{{ payment_form.amount.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Payment Type</span></label>
+                    {{ payment_form.payment_type }}
+                    {% if payment_form.payment_type.errors %}
+                        <p class="text-error text-sm mt-1">{{ payment_form.payment_type.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label"><span class="label-text">Notes</span></label>
+                    {{ payment_form.notes }}
+                    {% if payment_form.notes.errors %}
+                        <p class="text-error text-sm mt-1">{{ payment_form.notes.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <button type="submit" name="receive_payment" class="btn btn-success text-white">Receive Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Payment History</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Notes</th>
+                            <th>Received By</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                            <tr>
+                                <td>₦{{ payment.amount }}</td>
+                                <td>{{ payment.get_payment_type_display }}</td>
+                                <td>{{ payment.notes|default:"-" }}</td>
+                                <td>{{ payment.received_by }}</td>
+                                <td>{{ payment.created_at }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No payments recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

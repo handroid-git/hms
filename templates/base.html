@@ -77,6 +77,11 @@
                     <li><a href="{% url 'drug_create' %}">Create Drug</a></li>
                 {% endif %}
 
+                {% if request.user.role == "ACCOUNTANT" or request.user.is_superuser %}
+                    <li><a href="{% url 'accountant_dashboard' %}">Accountant Dashboard</a></li>
+                    <li><a href="{% url 'billing_list' %}">Billing</a></li>
+                {% endif %}
+
                 <li><a href="{% url 'profile' %}">My Profile</a></li>
             </ul>
         </aside>

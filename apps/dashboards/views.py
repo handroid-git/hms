@@ -5,8 +5,11 @@ from apps.consultations.models import Consultation
 from apps.laboratory.models import LabRequest
 from apps.patients.models import Patient
 from apps.pharmacy.models import PrescriptionItem
+from apps.billing.models import Billing
 from apps.waiting_room.models import WaitingRoomEntry
 from apps.waiting_room.services import waiting_room_is_overloaded
+from django.utils import timezone
+from django.db.models import Sum
 
 
 @login_required
@@ -94,3 +97,33 @@ def doctor_dashboard(request):
         "is_overloaded": waiting_room_is_overloaded(),
     }
     return render(request, "dashboards/doctor_dashboard.html", context)
+
+
+@login_required
+def accountant_dashboard(request):
+    if request.user.role != Role.ACCOUNTANT:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    today = timezone.localdate()
+
+    total_generated_today = (
+        Billing.objects.filter(created_at__date=today).aggregate(total=Sum("total_amount"))["total"]
+        or 0
+    )
+    total_paid_today = (
+        Billing.objects.filter(updated_at__date=today).aggregate(total=Sum("amount_paid"))["total"]
+        or 0
+    )
+    bills_today_count = Billing.objects.filter(created_at__date=today).count()
+    all_time_processed = Billing.objects.exclude(handled_by__isnull=True).count()
+
+    recent_bills = Billing.objects.select_related("patient").order_by("-updated_at")[:10]
+
+    context = {
+        "total_generated_today": total_generated_today,
+        "total_paid_today": total_paid_today,
+        "bills_today_count": bills_today_count,
+        "all_time_processed": all_time_processed,
+        "recent_bills": recent_bills,
+    }
+    return render(request, "dashboards/accountant_dashboard.html", context)
