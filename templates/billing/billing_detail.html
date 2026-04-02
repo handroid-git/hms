@@ -18,7 +18,21 @@
                 <p><strong>Medication Total:</strong> ₦{{ billing.medication_total }}</p>
                 <p><strong>Other Charges:</strong> ₦{{ billing.other_charges }}</p>
                 <p><strong>Discount:</strong> ₦{{ billing.discount }}</p>
-                <p><strong>Total Amount:</strong> ₦{{ billing.total_amount }}</p>
+
+                <div class="mt-4">
+                    <p class="font-semibold">Extra Items</p>
+                    <div class="space-y-2 mt-2">
+                        {% for item in extra_items %}
+                            <div class="border border-base-300 rounded-lg p-3">
+                                <p><strong>{{ item.title }}</strong> — ₦{{ item.price }}</p>
+                            </div>
+                        {% empty %}
+                            <p>No extra items.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <p class="mt-4"><strong>Total Amount:</strong> ₦{{ billing.total_amount }}</p>
                 <p><strong>Amount Paid:</strong> ₦{{ billing.amount_paid }}</p>
                 <p><strong>Balance:</strong> ₦{{ billing.balance }}</p>
                 <p><strong>Status:</strong> {{ billing.get_payment_status_display }}</p>
@@ -31,26 +45,43 @@
                 <h2 class="card-title">Update Bill</h2>
                 <form method="post" class="space-y-4">
                     {% csrf_token %}
-                    {{ billing_form.non_field_errors }}
 
                     <div>
                         <label class="label"><span class="label-text">Other Charges</span></label>
                         {{ billing_form.other_charges }}
-                        {% if billing_form.other_charges.errors %}
-                            <p class="text-error text-sm mt-1">{{ billing_form.other_charges.errors|join:", " }}</p>
-                        {% endif %}
                     </div>
 
                     <div>
                         <label class="label"><span class="label-text">Discount</span></label>
                         {{ billing_form.discount }}
-                        {% if billing_form.discount.errors %}
-                            <p class="text-error text-sm mt-1">{{ billing_form.discount.errors|join:", " }}</p>
-                        {% endif %}
                     </div>
 
                     <button type="submit" name="update_billing" class="btn btn-primary">Save Billing Changes</button>
                 </form>
+
+                <div class="divider"></div>
+
+                <h3 class="font-semibold text-lg">Add Extra Bill Item</h3>
+                <form method="post" class="space-y-4 mt-3">
+                    {% csrf_token %}
+                    <div>
+                        <label class="label"><span class="label-text">Title</span></label>
+                        {{ extra_item_form.title }}
+                    </div>
+                    <div>
+                        <label class="label"><span class="label-text">Price</span></label>
+                        {{ extra_item_form.price }}
+                    </div>
+                    <button type="submit" name="add_extra_item" class="btn btn-secondary">Add Extra Item</button>
+                </form>
+
+                {% if billing.payment_status == "PAID_FULL" %}
+                    <div class="divider"></div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" name="archive_bill" class="btn btn-outline">Archive Fully Paid Bill</button>
+                    </form>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -63,25 +94,16 @@
                 <div>
                     <label class="label"><span class="label-text">Amount</span></label>
                     {{ payment_form.amount }}
-                    {% if payment_form.amount.errors %}
-                        <p class="text-error text-sm mt-1">{{ payment_form.amount.errors|join:", " }}</p>
-                    {% endif %}
                 </div>
 
                 <div>
                     <label class="label"><span class="label-text">Payment Type</span></label>
                     {{ payment_form.payment_type }}
-                    {% if payment_form.payment_type.errors %}
-                        <p class="text-error text-sm mt-1">{{ payment_form.payment_type.errors|join:", " }}</p>
-                    {% endif %}
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="label"><span class="label-text">Notes</span></label>
                     {{ payment_form.notes }}
-                    {% if payment_form.notes.errors %}
-                        <p class="text-error text-sm mt-1">{{ payment_form.notes.errors|join:", " }}</p>
-                    {% endif %}
                 </div>
 
                 <div class="md:col-span-2">

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Billing, PaymentTransaction
+from .models import Billing, BillingExtraItem, PaymentTransaction
 
 
 class BillingUpdateForm(forms.ModelForm):
@@ -9,6 +9,16 @@ class BillingUpdateForm(forms.ModelForm):
         widgets = {
             "other_charges": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
             "discount": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
+        }
+
+
+class BillingExtraItemForm(forms.ModelForm):
+    class Meta:
+        model = BillingExtraItem
+        fields = ["title", "price"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "price": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
         }
 
 

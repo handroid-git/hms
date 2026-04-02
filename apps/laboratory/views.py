@@ -23,7 +23,7 @@ def lab_dashboard(request):
             LabRequest.Status.IN_PROGRESS,
             LabRequest.Status.REJECTED,
         ]
-    ).select_related("patient", "consultation").order_by("-updated_at")
+    ).select_related("patient", "consultation", "consultation__billing").order_by("-updated_at")
 
     available_tests = LabTest.objects.order_by("name")
     low_stock_tests = [test for test in available_tests if test.is_low_stock]
@@ -56,7 +56,7 @@ def lab_request_detail(request, pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     lab_request = get_object_or_404(
-        LabRequest.objects.select_related("patient", "consultation", "requested_by"),
+        LabRequest.objects.select_related("patient", "consultation", "requested_by", "consultation__billing"),
         pk=pk,
     )
     items = lab_request.items.select_related("lab_test").prefetch_related("attachments").all()
@@ -77,7 +77,7 @@ def lab_result_update(request, item_pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     item = get_object_or_404(
-        LabRequestItem.objects.select_related("lab_request", "lab_test").prefetch_related("attachments"),
+        LabRequestItem.objects.select_related("lab_request", "lab_test", "lab_request__consultation", "lab_request__consultation__billing").prefetch_related("attachments"),
         pk=item_pk,
     )
 

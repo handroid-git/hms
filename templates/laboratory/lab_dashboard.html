@@ -38,8 +38,9 @@
                     <thead>
                         <tr>
                             <th>Patient</th>
-                            <th>Status</th>
-                            <th>Requested</th>
+                            <th>Bill Status</th>
+                            <th>Amount Paid</th>
+                            <th>Lab Status</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -47,14 +48,15 @@
                         {% for request in active_requests %}
                             <tr>
                                 <td>{{ request.patient.full_name }}</td>
+                                <td>{{ request.consultation.billing.get_payment_status_display }}</td>
+                                <td>₦{{ request.consultation.billing.amount_paid }}</td>
                                 <td>{{ request.get_status_display }}</td>
-                                <td>{{ request.created_at }}</td>
                                 <td>
                                     <a href="{% url 'lab_request_detail' request.pk %}" class="btn btn-sm btn-outline">Open</a>
                                 </td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="4">No active lab work.</td></tr>
+                            <tr><td colspan="5">No active lab work.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

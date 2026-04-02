@@ -81,6 +81,7 @@
                 {% if request.user.role == "ACCOUNTANT" or request.user.is_superuser %}
                     <li><a href="{% url 'accountant_dashboard' %}">Accountant Dashboard</a></li>
                     <li><a href="{% url 'billing_list' %}">Billing</a></li>
+                    <li><a href="{% url 'archived_billing_list' %}">Archived Bills</a></li>
                 {% endif %}
 
                 <li><a href="{% url 'profile' %}">My Profile</a></li>

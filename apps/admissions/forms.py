@@ -5,11 +5,24 @@ from .models import Admission, InpatientNote, MedicationAdministration
 class AdmissionCreateForm(forms.ModelForm):
     class Meta:
         model = Admission
-        fields = ["reason_for_admission", "ward", "bed_number"]
+        fields = [
+            "reason_for_admission",
+            "ward",
+            "bed_number",
+            "surgery_performed",
+            "surgery_notes",
+            "further_lab_tests",
+            "visits_during_admission",
+            "admission_extra_costs",
+        ]
         widgets = {
             "reason_for_admission": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 4}),
             "ward": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "bed_number": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "surgery_notes": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+            "further_lab_tests": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+            "visits_during_admission": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+            "admission_extra_costs": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
         }
 
 
@@ -19,6 +32,15 @@ class AdmissionDischargeForm(forms.ModelForm):
         fields = ["discharge_summary"]
         widgets = {
             "discharge_summary": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 4}),
+        }
+
+
+class NurseDischargeConfirmationForm(forms.ModelForm):
+    class Meta:
+        model = Admission
+        fields = ["nurse_discharge_note"]
+        widgets = {
+            "nurse_discharge_note": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 4}),
         }
 
 

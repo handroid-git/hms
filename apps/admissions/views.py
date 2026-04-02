@@ -8,15 +8,20 @@ from .forms import (
     AdmissionDischargeForm,
     InpatientNoteForm,
     MedicationAdministrationForm,
+    NurseDischargeConfirmationForm,
 )
-from .models import Admission, InpatientNote, MedicationAdministration
-from .services import create_admission_from_consultation, discharge_admission
+from .models import Admission
+from .services import (
+    create_admission_from_consultation,
+    doctor_mark_discharge_pending,
+    nurse_confirm_discharge,
+)
 
 
 @login_required
 def admission_list(request):
     admissions = Admission.objects.select_related("patient", "admitted_by").order_by("-admitted_at")
-    active_admissions = admissions.filter(status=Admission.Status.ACTIVE)
+    active_admissions = admissions.filter(status__in=[Admission.Status.ACTIVE, Admission.Status.DISCHARGE_PENDING_NURSE])
     discharged_admissions = admissions.filter(status=Admission.Status.DISCHARGED)[:20]
 
     return render(
@@ -32,7 +37,7 @@ def admission_list(request):
 @login_required
 def admission_detail(request, pk):
     admission = get_object_or_404(
-        Admission.objects.select_related("patient", "admitted_by", "discharged_by"),
+        Admission.objects.select_related("patient", "admitted_by", "discharged_by", "nurse_discharge_confirmed_by"),
         pk=pk,
     )
 
@@ -42,6 +47,7 @@ def admission_detail(request, pk):
     note_form = InpatientNoteForm()
     medication_form = MedicationAdministrationForm()
     discharge_form = AdmissionDischargeForm(instance=admission)
+    nurse_discharge_form = NurseDischargeConfirmationForm(instance=admission)
 
     return render(
         request,
@@ -53,6 +59,7 @@ def admission_detail(request, pk):
             "note_form": note_form,
             "medication_form": medication_form,
             "discharge_form": discharge_form,
+            "nurse_discharge_form": nurse_discharge_form,
         },
     )
 
@@ -69,6 +76,9 @@ def admission_create_from_consultation_view(request, consultation_pk):
 
     if request.method == "POST":
         form = AdmissionCreateForm(request.POST)
+        form.instance.patient = consultation.patient
+        form.instance.consultation = consultation
+
         if form.is_valid():
             admission = create_admission_from_consultation(
                 consultation=consultation,
@@ -76,6 +86,11 @@ def admission_create_from_consultation_view(request, consultation_pk):
                 reason_for_admission=form.cleaned_data["reason_for_admission"],
                 ward=form.cleaned_data["ward"],
                 bed_number=form.cleaned_data["bed_number"],
+                surgery_performed=form.cleaned_data["surgery_performed"],
+                surgery_notes=form.cleaned_data["surgery_notes"],
+                further_lab_tests=form.cleaned_data["further_lab_tests"],
+                visits_during_admission=form.cleaned_data["visits_during_admission"],
+                admission_extra_costs=form.cleaned_data["admission_extra_costs"],
             )
             messages.success(request, "Patient admitted successfully.")
             return redirect("admission_detail", pk=admission.pk)
@@ -109,9 +124,7 @@ def inpatient_note_create_view(request, admission_pk, note_type):
             note = form.save(commit=False)
             note.admission = admission
             note.created_by = request.user
-            note.note_type = (
-                InpatientNote.NoteType.DOCTOR if note_type == "doctor" else InpatientNote.NoteType.NURSE
-            )
+            note.note_type = "DOCTOR" if note_type == "doctor" else "NURSE"
             note.save()
             messages.success(request, "Inpatient note added successfully.")
     return redirect("admission_detail", pk=admission.pk)
@@ -145,10 +158,29 @@ def discharge_admission_view(request, admission_pk):
     if request.method == "POST":
         form = AdmissionDischargeForm(request.POST, instance=admission)
         if form.is_valid():
-            discharge_admission(
+            doctor_mark_discharge_pending(
                 admission=admission,
                 discharged_by=request.user,
                 discharge_summary=form.cleaned_data["discharge_summary"],
             )
-            messages.success(request, "Patient discharged successfully.")
+            messages.success(request, "Doctor discharge saved. Waiting for nurse confirmation.")
+    return redirect("admission_detail", pk=admission.pk)
+
+
+@login_required
+def nurse_confirm_discharge_view(request, admission_pk):
+    if request.user.role not in [Role.NURSE, Role.ADMIN]:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    admission = get_object_or_404(Admission, pk=admission_pk, status=Admission.Status.DISCHARGE_PENDING_NURSE)
+
+    if request.method == "POST":
+        form = NurseDischargeConfirmationForm(request.POST, instance=admission)
+        if form.is_valid():
+            nurse_confirm_discharge(
+                admission=admission,
+                nurse_user=request.user,
+                nurse_note=form.cleaned_data["nurse_discharge_note"],
+            )
+            messages.success(request, "Discharge confirmed by nurse.")
     return redirect("admission_detail", pk=admission.pk)

@@ -1,5 +1,6 @@
 import uuid
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from apps.accounts.models import Role
 from apps.patients.models import Patient
@@ -42,6 +43,22 @@ class WaitingRoomEntry(models.Model):
 
     class Meta:
         ordering = ["priority", "created_at"]
+
+    def clean(self):
+        if self.patient.is_deceased:
+            raise ValidationError("A patient marked as deceased cannot be added to the waiting room.")
+
+        duplicate_exists = WaitingRoomEntry.objects.filter(
+            patient=self.patient,
+            is_active=True,
+        ).exclude(pk=self.pk).exists()
+
+        if duplicate_exists:
+            raise ValidationError("This patient is already in the waiting room.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.patient.full_name} - {self.get_priority_display()}"

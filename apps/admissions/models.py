@@ -1,5 +1,7 @@
 import uuid
+from decimal import Decimal
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -7,6 +9,7 @@ from django.utils import timezone
 class Admission(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Active"
+        DISCHARGE_PENDING_NURSE = "DISCHARGE_PENDING_NURSE", "Pending Nurse Discharge Confirmation"
         DISCHARGED = "DISCHARGED", "Discharged"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -26,9 +29,14 @@ class Admission(models.Model):
     reason_for_admission = models.TextField(blank=True)
     ward = models.CharField(max_length=100, blank=True)
     bed_number = models.CharField(max_length=50, blank=True)
+    surgery_performed = models.BooleanField(default=False)
+    surgery_notes = models.TextField(blank=True)
+    further_lab_tests = models.TextField(blank=True)
+    visits_during_admission = models.TextField(blank=True)
+    admission_extra_costs = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
 
     status = models.CharField(
-        max_length=20,
+        max_length=40,
         choices=Status.choices,
         default=Status.ACTIVE,
     )
@@ -46,10 +54,18 @@ class Admission(models.Model):
         blank=True,
         related_name="admissions_discharged",
     )
+    nurse_discharge_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="admissions_nurse_confirmed",
+    )
 
     admitted_at = models.DateTimeField(default=timezone.now)
     discharged_at = models.DateTimeField(null=True, blank=True)
     discharge_summary = models.TextField(blank=True)
+    nurse_discharge_note = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -71,8 +87,32 @@ class Admission(models.Model):
             return f"{self.discharged_by.get_full_name() or self.discharged_by.username} | {self.discharged_at:%Y-%m-%d %H:%M}"
         return "Not discharged"
 
+    @property
+    def nurse_discharge_stamp(self):
+        if self.nurse_discharge_confirmed_by and self.discharged_at:
+            return f"{self.nurse_discharge_confirmed_by.get_full_name() or self.nurse_discharge_confirmed_by.username}"
+        return "Not nurse-confirmed"
+
+    def clean(self):
+        if not self.patient_id or not self.consultation_id:
+            return
+
+        duplicate_exists = Admission.objects.filter(
+            patient_id=self.patient_id,
+            consultation_id=self.consultation_id,
+            status__in=[Admission.Status.ACTIVE, Admission.Status.DISCHARGE_PENDING_NURSE],
+        ).exclude(pk=self.pk).exists()
+
+        if duplicate_exists:
+            raise ValidationError("This patient already has an active admission for this consultation session.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.patient.full_name} - {self.get_status_display()}"
+        patient_name = self.patient.full_name if self.patient_id else "Unknown Patient"
+        return f"{patient_name} - {self.get_status_display()}"
 
 
 class InpatientNote(models.Model):

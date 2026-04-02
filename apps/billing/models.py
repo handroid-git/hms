@@ -57,17 +57,21 @@ class Billing(models.Model):
         choices=PaymentStatus.choices,
         default=PaymentStatus.UNPAID,
     )
+    is_archived = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def recalculate_total(self):
+        extras_total = sum((item.price for item in self.extra_items.all()), Decimal("0.00"))
+
         self.total_amount = (
             self.consultation_fee
             + self.lab_total
             + self.prescription_total
             + self.medication_total
             + self.other_charges
+            + extras_total
             - self.discount
         )
         if self.total_amount < Decimal("0.00"):
@@ -98,6 +102,27 @@ class Billing(models.Model):
 
     def __str__(self):
         return f"Billing - {self.patient.full_name}"
+
+
+class BillingExtraItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    billing = models.ForeignKey(
+        Billing,
+        on_delete=models.CASCADE,
+        related_name="extra_items",
+    )
+    title = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="billing_extra_items_created",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.billing.patient.full_name}"
 
 
 class PaymentTransaction(models.Model):

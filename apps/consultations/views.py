@@ -85,6 +85,10 @@ def consultation_complete_view(request, pk):
         messages.error(request, "Only doctors can complete consultations.")
         return redirect("dashboard_redirect")
 
+    if consultation.patient.admission_status == "ADMITTED":
+        messages.error(request, "An admitted patient cannot be marked complete. Discharge the patient first.")
+        return redirect("consultation_detail", pk=consultation.pk)
+
     complete_consultation(consultation)
     messages.success(request, "Consultation marked as complete and added to medical history.")
     return redirect("doctor_dashboard")

@@ -6,6 +6,7 @@
     <div>
         <h1 class="text-3xl font-bold">Lab Request</h1>
         <p class="text-base-content/70">{{ lab_request.patient.full_name }} — {{ lab_request.get_status_display }}</p>
+        <p class="text-base-content/70">Billing Status: {{ lab_request.consultation.billing.get_payment_status_display }} | Amount Paid: ₦{{ lab_request.consultation.billing.amount_paid }}</p>
     </div>
 
     <div class="card bg-base-100 shadow-sm">

@@ -9,11 +9,10 @@
             <p class="text-base-content/70">{{ admission.patient.full_name }} — {{ admission.get_status_display }}</p>
         </div>
         {% if admission.status == "ACTIVE" and request.user.role == "DOCTOR" or request.user.is_superuser %}
-            <form method="post" action="{% url 'discharge_admission' admission.pk %}">
-                {% csrf_token %}
-                {{ discharge_form.discharge_summary.as_hidden }}
-                <button type="button" class="btn btn-error text-white" onclick="document.getElementById('discharge-modal').showModal()">Discharge Patient</button>
-            </form>
+            <button type="button" class="btn btn-error text-white" onclick="document.getElementById('discharge-modal').showModal()">Doctor Discharge</button>
+        {% endif %}
+        {% if admission.status == "DISCHARGE_PENDING_NURSE" and request.user.role == "NURSE" or request.user.is_superuser %}
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('nurse-discharge-modal').showModal()">Nurse Confirm Discharge</button>
         {% endif %}
     </div>
 
@@ -28,10 +27,19 @@
                 <p><strong>Status:</strong> {{ admission.get_status_display }}</p>
                 <p><strong>Admitted At:</strong> {{ admission.admitted_at }}</p>
                 <p><strong>Days Admitted:</strong> {{ admission.days_admitted }}</p>
+                <p><strong>Surgery Performed:</strong> {{ admission.surgery_performed|yesno:"Yes,No" }}</p>
+                <p><strong>Surgery Notes:</strong> {{ admission.surgery_notes|default:"-" }}</p>
+                <p><strong>Further Lab Tests:</strong> {{ admission.further_lab_tests|default:"-" }}</p>
+                <p><strong>Visits During Admission:</strong> {{ admission.visits_during_admission|default:"-" }}</p>
+                <p><strong>Admission Extra Costs:</strong> ₦{{ admission.admission_extra_costs }}</p>
                 <p><strong>Admitted By Stamp:</strong> {{ admission.admitted_by_stamp }}</p>
                 <p><strong>Discharged By Stamp:</strong> {{ admission.discharged_by_stamp }}</p>
+                <p><strong>Nurse Discharge Stamp:</strong> {{ admission.nurse_discharge_stamp }}</p>
                 {% if admission.discharge_summary %}
-                    <p><strong>Discharge Summary:</strong> {{ admission.discharge_summary }}</p>
+                    <p><strong>Doctor Discharge Summary:</strong> {{ admission.discharge_summary }}</p>
+                {% endif %}
+                {% if admission.nurse_discharge_note %}
+                    <p><strong>Nurse Discharge Note:</strong> {{ admission.nurse_discharge_note }}</p>
                 {% endif %}
             </div>
         </div>
@@ -46,9 +54,6 @@
                             <div>
                                 <label class="label"><span class="label-text">{{ field.label }}</span></label>
                                 {{ field }}
-                                {% if field.errors %}
-                                    <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
-                                {% endif %}
                             </div>
                         {% endfor %}
                         <button type="submit" class="btn btn-primary">Record Medication</button>
@@ -121,14 +126,29 @@
 
 <dialog id="discharge-modal" class="modal">
     <div class="modal-box">
-        <h3 class="font-bold text-lg">Discharge Patient</h3>
+        <h3 class="font-bold text-lg">Doctor Discharge</h3>
         <form method="post" action="{% url 'discharge_admission' admission.pk %}" class="space-y-4 mt-4">
             {% csrf_token %}
             <label class="label"><span class="label-text">Discharge Summary</span></label>
             {{ discharge_form.discharge_summary }}
             <div class="modal-action">
                 <button type="button" class="btn" onclick="document.getElementById('discharge-modal').close()">Cancel</button>
-                <button type="submit" class="btn btn-error text-white">Confirm Discharge</button>
+                <button type="submit" class="btn btn-error text-white">Save Doctor Discharge</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="nurse-discharge-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Nurse Confirm Discharge</h3>
+        <form method="post" action="{% url 'nurse_confirm_discharge' admission.pk %}" class="space-y-4 mt-4">
+            {% csrf_token %}
+            <label class="label"><span class="label-text">Nurse Discharge Note</span></label>
+            {{ nurse_discharge_form.nurse_discharge_note }}
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('nurse-discharge-modal').close()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm Discharge</button>
             </div>
         </form>
     </div>
