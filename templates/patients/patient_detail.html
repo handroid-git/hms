@@ -11,15 +11,26 @@
         <div class="flex gap-2">
             <a href="{% url 'patient_update' patient.pk %}" class="btn btn-outline">Edit Patient</a>
             {% if request.user.role == "NURSE" or request.user.is_superuser %}
-                <a href="{% url 'waiting_room_add' %}" class="btn btn-primary">Add to Waiting Room</a>
+                <a href="{% url 'waiting_room_add' %}?patient={{ patient.pk }}" class="btn btn-primary">
+                    Add to Waiting Room
+                </a>
             {% endif %}
         </div>
     </div>
 
+    {% if patient.is_deceased %}
+        <div class="alert bg-red-700 text-white border-red-800 shadow-sm">
+            <div>
+                <span class="font-bold text-lg">DEAD</span>
+                <span class="ml-2">Died on: {{ patient.updated_at }}</span>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card bg-base-100 shadow-sm">
+        <div class="card {% if patient.is_deceased %}bg-red-100 border-2 border-red-700{% else %}bg-base-100{% endif %} shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Patient Information</h2>
+                <h2 class="card-title {% if patient.is_deceased %}text-red-800{% endif %}">Patient Information</h2>
                 <p><strong>Gender:</strong> {{ patient.get_gender_display }}</p>
                 <p><strong>Phone:</strong> {{ patient.phone_number }}</p>
                 <p><strong>Address:</strong> {{ patient.address }}</p>
@@ -30,7 +41,14 @@
                 <p><strong>Discharged At:</strong> {{ patient.discharged_at|default:"-" }}</p>
                 <p><strong>Days Admitted:</strong> {{ patient.admitted_days }}</p>
                 <p><strong>Given Birth:</strong> {{ patient.given_birth|yesno:"Yes,No" }}</p>
-                <p><strong>Deceased:</strong> {{ patient.is_deceased|yesno:"Yes,No" }}</p>
+                <p>
+                    <strong>Deceased:</strong>
+                    {% if patient.is_deceased %}
+                        <span class="font-bold text-red-700">Dead</span>
+                    {% else %}
+                        No
+                    {% endif %}
+                </p>
             </div>
         </div>
 
@@ -134,32 +152,38 @@
                                     {% endif %}
                                 {% endwith %}
                             </div>
+
+                            {% with linked_admissions=record.consultation.admissions.all %}
+                                {% if linked_admissions %}
+                                    <div class="mt-4">
+                                        <p class="font-semibold mb-2">Admission History for This Session</p>
+                                        <div class="space-y-3">
+                                            {% for admission in linked_admissions %}
+                                                <div class="border border-base-300 rounded-lg p-3">
+                                                    <p><strong>Status:</strong> {{ admission.get_status_display }}</p>
+                                                    <p><strong>Reason:</strong> {{ admission.reason_for_admission|default:"-" }}</p>
+                                                    <p><strong>Ward:</strong> {{ admission.ward|default:"-" }}</p>
+                                                    <p><strong>Bed:</strong> {{ admission.bed_number|default:"-" }}</p>
+                                                    <p><strong>Admitted At:</strong> {{ admission.admitted_at }}</p>
+                                                    <p><strong>Discharged At:</strong> {{ admission.discharged_at|default:"-" }}</p>
+                                                    <p><strong>Days Admitted:</strong> {{ admission.days_admitted }}</p>
+                                                    <p><strong>Surgery Performed:</strong> {{ admission.surgery_performed|yesno:"Yes,No" }}</p>
+
+                                                    <div class="mt-3">
+                                                        <a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">
+                                                            View Full Admission Details
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
                         {% endif %}
                     </div>
                 {% empty %}
                     <p>No medical history yet.</p>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
-            <h2 class="card-title">Admission History</h2>
-            <div class="space-y-4">
-                {% for admission in patient.admissions.all %}
-                    <div class="border border-base-300 rounded-xl p-4">
-                        <p><strong>Status:</strong> {{ admission.get_status_display }}</p>
-                        <p><strong>Reason:</strong> {{ admission.reason_for_admission|default:"-" }}</p>
-                        <p><strong>Admitted At:</strong> {{ admission.admitted_at }}</p>
-                        <p><strong>Discharged At:</strong> {{ admission.discharged_at|default:"-" }}</p>
-                        <p><strong>Days Admitted:</strong> {{ admission.days_admitted }}</p>
-                        <div class="mt-3">
-                            <a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">View Full Admission Details</a>
-                        </div>
-                    </div>
-                {% empty %}
-                    <p>No admission history yet.</p>
                 {% endfor %}
             </div>
         </div>

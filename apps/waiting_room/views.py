@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from apps.patients.models import TriageRecord
 from .forms import WaitingRoomEntryForm
@@ -34,28 +35,35 @@ def waiting_room_list(request):
 
 @login_required
 def waiting_room_add(request):
+    patient_id = request.GET.get("patient")
+
     if request.method == "POST":
-        form = WaitingRoomEntryForm(request.POST)
+        form = WaitingRoomEntryForm(request.POST, patient_id=request.POST.get("patient"))
         if form.is_valid():
             entry = form.save(commit=False)
             entry.added_by = request.user
-            entry.save()
+            try:
+                entry.save()
 
-            TriageRecord.objects.create(
-                patient=entry.patient,
-                waiting_room_entry=entry,
-                blood_pressure=form.cleaned_data.get("blood_pressure", ""),
-                pulse=form.cleaned_data.get("pulse"),
-                weight=form.cleaned_data.get("weight"),
-                body_temperature=form.cleaned_data.get("body_temperature"),
-                notes=form.cleaned_data.get("triage_notes", ""),
-                created_by=request.user,
-            )
+                TriageRecord.objects.create(
+                    patient=entry.patient,
+                    waiting_room_entry=entry,
+                    blood_pressure=form.cleaned_data.get("blood_pressure", ""),
+                    pulse=form.cleaned_data.get("pulse"),
+                    weight=form.cleaned_data.get("weight"),
+                    body_temperature=form.cleaned_data.get("body_temperature"),
+                    notes=form.cleaned_data.get("triage_notes", ""),
+                    created_by=request.user,
+                )
 
-            messages.success(request, "Patient added to waiting room with vital signs.")
-            return redirect("waiting_room_list")
+                messages.success(request, "Patient added to waiting room with vital signs.")
+                return redirect("waiting_room_list")
+            except ValidationError as exc:
+                error_message = " ".join(exc.messages)
+                form.add_error(None, error_message)
+                messages.error(request, error_message)
     else:
-        form = WaitingRoomEntryForm()
+        form = WaitingRoomEntryForm(patient_id=patient_id)
 
     return render(
         request,

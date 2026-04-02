@@ -1,4 +1,4 @@
-{% load tailwind_tags %}
+{% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -7,144 +7,87 @@
     <title>Hospital Management System</title>
     {% tailwind_css %}
 </head>
-<body class="bg-base-100 text-base-content">
+<body class="min-h-screen bg-base-200 flex flex-col">
 
-    <div class="navbar bg-base-100 border-b border-base-300 px-6 lg:px-12">
+<header class="bg-blue-800 text-white">
+    <div class="navbar max-w-7xl mx-auto px-4">
         <div class="flex-1">
-            <a href="{% url 'home' %}" class="text-2xl font-bold text-primary">
-                HMS
-            </a>
+            <a href="{% url 'home' %}" class="text-2xl font-bold">HMS</a>
         </div>
         <div class="flex-none gap-2">
-            {% if request.user.is_authenticated %}
-                <a href="{% url 'dashboard_redirect' %}" class="btn btn-primary">Go to Dashboard</a>
-            {% else %}
-                <a href="{% url 'login' %}" class="btn btn-outline">Staff Login</a>
-                <a href="{% url 'signup' %}" class="btn btn-primary">Signup</a>
-            {% endif %}
+            <button id="theme-toggle" type="button" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
+                Toggle Theme
+            </button>
+            <a href="{% url 'login' %}" class="btn btn-sm bg-white text-blue-800 border-white hover:bg-blue-100">
+                Staff Login
+            </a>
         </div>
     </div>
+</header>
 
-    <section class="hero min-h-[85vh] bg-base-200">
-        <div class="hero-content flex-col lg:flex-row-reverse gap-12 px-6 lg:px-12">
-            <div class="max-w-xl">
-                <div class="card bg-base-100 shadow-xl">
-                    <div class="card-body">
-                        <h2 class="card-title text-2xl">Core Modules</h2>
-                        <ul class="space-y-2 text-base-content/80">
-                            <li>• Waiting room management</li>
-                            <li>• Patient medical records</li>
-                            <li>• Role-based staff dashboards</li>
-                            <li>• Billing and accounting workflow</li>
-                            <li>• Laboratory and pharmacy operations</li>
-                            <li>• Internal staff communication</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="max-w-2xl">
-                <h1 class="text-4xl lg:text-6xl font-bold leading-tight">
-                    Smart Hospital Management,
-                    <span class="text-primary">Built for Speed and Accuracy</span>
+<main class="flex-1">
+    <section class="max-w-7xl mx-auto px-4 py-20">
+        <div class="grid lg:grid-cols-2 gap-10 items-center">
+            <div class="space-y-6">
+                <h1 class="text-5xl font-bold leading-tight">
+                    Professional Hospital Management System
                 </h1>
-                <p class="py-6 text-lg text-base-content/75">
-                    A professional hospital workflow platform for nurses, doctors,
-                    accountants, lab technicians, pharmacists, and administrators.
-                    Manage patients from intake to discharge with a clean, scalable system.
+                <p class="text-lg text-base-content/80">
+                    Manage patients, consultations, billing, laboratory workflow, pharmacy operations,
+                    admissions, and staff workflow from one unified platform.
                 </p>
-
                 <div class="flex flex-wrap gap-3">
-                    {% if request.user.is_authenticated %}
-                        <a href="{% url 'dashboard_redirect' %}" class="btn btn-primary btn-lg">Go to Dashboard</a>
-                    {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-outline btn-lg">Login</a>
-                        <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Signup</a>
-                    {% endif %}
-                        <a href="#features" class="btn btn-ghost btn-lg">Explore Features</a>
+                    <a href="{% url 'login' %}" class="btn bg-blue-800 text-white border-blue-800 hover:bg-blue-900">
+                        Staff Login
+                    </a>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-2xl">
+                <div class="card-body">
+                    <h2 class="card-title text-2xl">Core Modules</h2>
+                    <ul class="space-y-2">
+                        <li>Patient registration and history</li>
+                        <li>Waiting room and triage workflow</li>
+                        <li>Doctor consultations</li>
+                        <li>Laboratory and result review</li>
+                        <li>Pharmacy and medication issuing</li>
+                        <li>Billing and accountant workflow</li>
+                        <li>Admissions and inpatient management</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </section>
+</main>
 
-    <section id="features" class="py-16 px-6 lg:px-12 bg-base-100">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold">Why this system works</h2>
-                <p class="text-base-content/70 mt-2">
-                    Structured around real hospital workflows and staff responsibilities.
-                </p>
-            </div>
+<footer class="bg-blue-800 text-white py-4 px-6 border-t border-blue-900">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+        <p class="font-semibold">Hospital Management System</p>
+        <p class="text-sm opacity-90">© 2026 HMS. Professional hospital workflow system.</p>
+    </div>
+</footer>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Waiting Room Automation</h3>
-                        <p>
-                            Patients are queued professionally with first-come-first-serve logic,
-                            while still supporting appointment and emergency prioritization.
-                        </p>
-                    </div>
-                </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const html = document.documentElement;
+        const themeToggle = document.getElementById("theme-toggle");
+        const savedTheme = localStorage.getItem("hms-theme");
 
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Patient History</h3>
-                        <p>
-                            Every patient keeps a growing medical history including vitals,
-                            diagnosis, medication, and record stamps.
-                        </p>
-                    </div>
-                </div>
+        if (savedTheme) {
+            html.setAttribute("data-theme", savedTheme);
+        }
 
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Role-Based Access</h3>
-                        <p>
-                            Each staff category operates from its own dashboard with the tools
-                            needed for their exact workflow.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Billing Integration</h3>
-                        <p>
-                            Consultation, lab requests, medication, and payments can be tied
-                            into one controlled billing process.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Operational Visibility</h3>
-                        <p>
-                            Staff can monitor queue pressure, patient flow, and workload
-                            through practical dashboards.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="card bg-base-200 shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title">Scalable Foundation</h3>
-                        <p>
-                            Built in Django with a structure that can grow into advanced
-                            notifications, chat, reports, and payroll.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <footer class="footer footer-center p-6 bg-base-200 text-base-content border-t border-base-300">
-        <aside>
-            <p>Hospital Management System powered by hottomate&trade;</p>
-        </aside>
-    </footer>
+        if (themeToggle) {
+            themeToggle.addEventListener("click", function () {
+                const currentTheme = html.getAttribute("data-theme") || "light";
+                const nextTheme = currentTheme === "light" ? "dark" : "light";
+                html.setAttribute("data-theme", nextTheme);
+                localStorage.setItem("hms-theme", nextTheme);
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

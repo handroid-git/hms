@@ -15,7 +15,7 @@ class Patient(models.Model):
         DISCHARGED = "DISCHARGED", "Discharged"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    hospital_number = models.CharField(max_length=50, unique=True)
+    hospital_number = models.CharField(max_length=50, unique=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -63,16 +63,37 @@ class Patient(models.Model):
         end_time = self.discharged_at or timezone.now()
         return (end_time.date() - self.admitted_at.date()).days + 1
 
+    def generate_hospital_number(self):
+        year = timezone.now().year
+        prefix = f"HMS-{year}-"
+
+        last_patient = (
+            Patient.objects.filter(hospital_number__startswith=prefix)
+            .order_by("-hospital_number")
+            .first()
+        )
+
+        if last_patient and last_patient.hospital_number:
+            try:
+                last_number = int(last_patient.hospital_number.split("-")[-1])
+            except (ValueError, IndexError):
+                last_number = 0
+        else:
+            last_number = 0
+
+        next_number = last_number + 1
+        return f"{prefix}{next_number:05d}"
+
+    def save(self, *args, **kwargs):
+        if not self.hospital_number:
+            self.hospital_number = self.generate_hospital_number()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.hospital_number} - {self.full_name}"
 
 
 class TriageRecord(models.Model):
-    """
-    Nurse vitals collected before the patient enters the waiting room.
-    This is NOT permanent medical history by itself.
-    It becomes part of the final session history after doctor completes consultation.
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="triage_records")
     waiting_room_entry = models.OneToOneField(

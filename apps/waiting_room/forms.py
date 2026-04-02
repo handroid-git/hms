@@ -1,5 +1,6 @@
 from django import forms
 from apps.accounts.models import Role, User
+from apps.patients.models import Patient
 from .models import WaitingRoomEntry
 
 
@@ -7,6 +8,11 @@ class WaitingRoomEntryForm(forms.ModelForm):
     assigned_doctor = forms.ModelChoiceField(
         queryset=User.objects.filter(role=Role.DOCTOR, is_active=True).order_by("first_name", "last_name", "username"),
         required=False,
+        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
+    )
+
+    patient = forms.ModelChoiceField(
+        queryset=Patient.objects.filter(is_deceased=False).order_by("first_name", "last_name"),
         widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
     )
 
@@ -39,6 +45,15 @@ class WaitingRoomEntryForm(forms.ModelForm):
         model = WaitingRoomEntry
         fields = ["patient", "priority", "assigned_doctor"]
         widgets = {
-            "patient": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "priority": forms.Select(attrs={"class": "select select-bordered w-full"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        patient_id = kwargs.pop("patient_id", None)
+        super().__init__(*args, **kwargs)
+
+        if patient_id:
+            try:
+                self.fields["patient"].initial = self.fields["patient"].queryset.get(pk=patient_id)
+            except Patient.DoesNotExist:
+                pass

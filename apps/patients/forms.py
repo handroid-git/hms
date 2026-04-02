@@ -6,7 +6,6 @@ class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
         fields = [
-            "hospital_number",
             "first_name",
             "last_name",
             "date_of_birth",
@@ -20,7 +19,6 @@ class PatientForm(forms.ModelForm):
             "is_deceased",
         ]
         widgets = {
-            "hospital_number": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "first_name": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "last_name": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
             "date_of_birth": forms.DateInput(attrs={"class": "input input-bordered w-full", "type": "date"}),
