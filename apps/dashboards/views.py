@@ -1,15 +1,16 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.utils import timezone
+from django.db.models import Sum
 from apps.accounts.models import Role
+from apps.admissions.models import Admission
+from apps.billing.models import Billing
 from apps.consultations.models import Consultation
 from apps.laboratory.models import LabRequest
 from apps.patients.models import Patient
 from apps.pharmacy.models import PrescriptionItem
-from apps.billing.models import Billing
 from apps.waiting_room.models import WaitingRoomEntry
 from apps.waiting_room.services import waiting_room_is_overloaded
-from django.utils import timezone
-from django.db.models import Sum
 
 
 @login_required
@@ -19,6 +20,10 @@ def nurse_dashboard(request):
         is_active=True,
         status=WaitingRoomEntry.Status.WAITING
     ).count()
+
+    admitted_patients = Admission.objects.filter(
+        status=Admission.Status.ACTIVE
+    ).select_related("patient").order_by("-admitted_at")[:10]
 
     recent_patients = Patient.objects.order_by("-created_at")[:5]
     recent_waiting_entries = WaitingRoomEntry.objects.filter(
@@ -31,6 +36,7 @@ def nurse_dashboard(request):
         "active_waiting_count": active_waiting_count,
         "recent_patients": recent_patients,
         "recent_waiting_entries": recent_waiting_entries,
+        "admitted_patients": admitted_patients,
         "is_overloaded": waiting_room_is_overloaded(),
     }
     return render(request, "dashboards/nurse_dashboard.html", context)
@@ -86,6 +92,10 @@ def doctor_dashboard(request):
         ],
     ).select_related("patient", "drug").order_by("-updated_at")[:10]
 
+    active_admissions = Admission.objects.filter(
+        status=Admission.Status.ACTIVE
+    ).select_related("patient").order_by("-admitted_at")[:10]
+
     context = {
         "active_waiting_count": active_waiting_count,
         "in_progress_consultations": in_progress_consultations,
@@ -94,6 +104,7 @@ def doctor_dashboard(request):
         "next_patients": next_patients,
         "doctor_lab_reviews": doctor_lab_reviews,
         "pending_prescriptions": pending_prescriptions,
+        "active_admissions": active_admissions,
         "is_overloaded": waiting_room_is_overloaded(),
     }
     return render(request, "dashboards/doctor_dashboard.html", context)

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Admissions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Admissions</h1>
+        <p class="text-base-content/70">Track active admissions and recent discharges.</p>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Active Admissions</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Ward</th>
+                            <th>Bed</th>
+                            <th>Days</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admission in active_admissions %}
+                            <tr>
+                                <td>{{ admission.patient.full_name }}</td>
+                                <td>{{ admission.ward|default:"-" }}</td>
+                                <td>{{ admission.bed_number|default:"-" }}</td>
+                                <td>{{ admission.days_admitted }}</td>
+                                <td><a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No active admissions.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Recent Discharges</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Discharged At</th>
+                            <th>Days</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admission in discharged_admissions %}
+                            <tr>
+                                <td>{{ admission.patient.full_name }}</td>
+                                <td>{{ admission.discharged_at }}</td>
+                                <td>{{ admission.days_admitted }}</td>
+                                <td><a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">No discharged admissions.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

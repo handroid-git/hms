@@ -77,25 +77,29 @@
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Next Patients in Queue</h2>
+                <h2 class="card-title">Current Admissions</h2>
                 <div class="overflow-x-auto">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>Patient</th>
-                                <th>Priority</th>
-                                <th>Assigned Doctor</th>
+                                <th>Ward/Bed</th>
+                                <th>Days</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for entry in next_patients %}
+                            {% for admission in active_admissions %}
                                 <tr>
-                                    <td>{{ entry.patient.full_name }}</td>
-                                    <td>{{ entry.get_priority_display }}</td>
-                                    <td>{{ entry.assigned_doctor|default:"-" }}</td>
+                                    <td>{{ admission.patient.full_name }}</td>
+                                    <td>{{ admission.ward|default:"-" }} {% if admission.bed_number %}/ {{ admission.bed_number }}{% endif %}</td>
+                                    <td>{{ admission.days_admitted }}</td>
+                                    <td>
+                                        <a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">Open</a>
+                                    </td>
                                 </tr>
                             {% empty %}
-                                <tr><td colspan="3">No waiting patients.</td></tr>
+                                <tr><td colspan="4">No active admissions.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

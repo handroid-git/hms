@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Admission Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+            <h1 class="text-3xl font-bold">Admission Detail</h1>
+            <p class="text-base-content/70">{{ admission.patient.full_name }} — {{ admission.get_status_display }}</p>
+        </div>
+        {% if admission.status == "ACTIVE" and request.user.role == "DOCTOR" or request.user.is_superuser %}
+            <form method="post" action="{% url 'discharge_admission' admission.pk %}">
+                {% csrf_token %}
+                {{ discharge_form.discharge_summary.as_hidden }}
+                <button type="button" class="btn btn-error text-white" onclick="document.getElementById('discharge-modal').showModal()">Discharge Patient</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Admission Info</h2>
+                <p><strong>Patient:</strong> {{ admission.patient.full_name }}</p>
+                <p><strong>Ward:</strong> {{ admission.ward|default:"-" }}</p>
+                <p><strong>Bed:</strong> {{ admission.bed_number|default:"-" }}</p>
+                <p><strong>Reason:</strong> {{ admission.reason_for_admission|default:"-" }}</p>
+                <p><strong>Status:</strong> {{ admission.get_status_display }}</p>
+                <p><strong>Admitted At:</strong> {{ admission.admitted_at }}</p>
+                <p><strong>Days Admitted:</strong> {{ admission.days_admitted }}</p>
+                <p><strong>Admitted By Stamp:</strong> {{ admission.admitted_by_stamp }}</p>
+                <p><strong>Discharged By Stamp:</strong> {{ admission.discharged_by_stamp }}</p>
+                {% if admission.discharge_summary %}
+                    <p><strong>Discharge Summary:</strong> {{ admission.discharge_summary }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Medication Administration</h2>
+                {% if admission.status == "ACTIVE" and request.user.role == "NURSE" or request.user.is_superuser %}
+                    <form method="post" action="{% url 'medication_administration_create' admission.pk %}" class="space-y-3">
+                        {% csrf_token %}
+                        {% for field in medication_form %}
+                            <div>
+                                <label class="label"><span class="label-text">{{ field.label }}</span></label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">Record Medication</button>
+                    </form>
+                {% else %}
+                    <p class="text-base-content/70">Medication recording is available to nurses.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Inpatient Notes</h2>
+
+                {% if admission.status == "ACTIVE" and request.user.role == "DOCTOR" or request.user.is_superuser %}
+                    <form method="post" action="{% url 'inpatient_note_create' admission.pk 'doctor' %}" class="space-y-3 mb-6">
+                        {% csrf_token %}
+                        <label class="label"><span class="label-text">Doctor Note</span></label>
+                        {{ note_form.note }}
+                        <button type="submit" class="btn btn-primary">Add Doctor Note</button>
+                    </form>
+                {% endif %}
+
+                {% if admission.status == "ACTIVE" and request.user.role == "NURSE" or request.user.is_superuser %}
+                    <form method="post" action="{% url 'inpatient_note_create' admission.pk 'nurse' %}" class="space-y-3 mb-6">
+                        {% csrf_token %}
+                        <label class="label"><span class="label-text">Nurse Note</span></label>
+                        {{ note_form.note }}
+                        <button type="submit" class="btn btn-secondary">Add Nurse Note</button>
+                    </form>
+                {% endif %}
+
+                <div class="space-y-4">
+                    {% for note in notes %}
+                        <div class="border border-base-300 rounded-lg p-3">
+                            <p><strong>{{ note.get_note_type_display }}</strong></p>
+                            <p>{{ note.note }}</p>
+                            <p class="text-sm text-base-content/70 mt-2">{{ note.created_by_stamp }}</p>
+                        </div>
+                    {% empty %}
+                        <p>No inpatient notes yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Medication Logs</h2>
+                <div class="space-y-4">
+                    {% for log in medication_logs %}
+                        <div class="border border-base-300 rounded-lg p-3">
+                            <p><strong>{{ log.medication_name }}</strong></p>
+                            <p><strong>Dosage:</strong> {{ log.dosage|default:"-" }}</p>
+                            <p><strong>Frequency:</strong> {{ log.frequency|default:"-" }}</p>
+                            <p><strong>Route:</strong> {{ log.get_route_display }}</p>
+                            <p><strong>Notes:</strong> {{ log.administration_notes|default:"-" }}</p>
+                            <p class="text-sm text-base-content/70 mt-2">{{ log.administered_by_stamp }}</p>
+                        </div>
+                    {% empty %}
+                        <p>No medication records yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<dialog id="discharge-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Discharge Patient</h3>
+        <form method="post" action="{% url 'discharge_admission' admission.pk %}" class="space-y-4 mt-4">
+            {% csrf_token %}
+            <label class="label"><span class="label-text">Discharge Summary</span></label>
+            {{ discharge_form.discharge_summary }}
+            <div class="modal-action">
+                <button type="button" class="btn" onclick="document.getElementById('discharge-modal').close()">Cancel</button>
+                <button type="submit" class="btn btn-error text-white">Confirm Discharge</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+{% endblock %}

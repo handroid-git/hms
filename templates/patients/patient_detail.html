@@ -2,7 +2,7 @@
 {% block title %}Patient Detail{% endblock %}
 
 {% block content %}
-<div class="space-y-6 bg-blue-300">
+<div class="space-y-6">
     <div class="flex flex-wrap justify-between gap-3">
         <div>
             <h1 class="text-3xl font-bold">{{ patient.full_name }}</h1>
@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm bg-amber-200">
+    <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Medical History</h2>
             <div class="space-y-4">
@@ -129,6 +129,61 @@
                     </div>
                 {% empty %}
                     <p>No medical history yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Admission History</h2>
+            <div class="space-y-4">
+                {% for admission in patient.admissions.all %}
+                    <div class="border border-base-300 rounded-xl p-4">
+                        <p><strong>Status:</strong> {{ admission.get_status_display }}</p>
+                        <p><strong>Reason:</strong> {{ admission.reason_for_admission|default:"-" }}</p>
+                        <p><strong>Ward:</strong> {{ admission.ward|default:"-" }}</p>
+                        <p><strong>Bed:</strong> {{ admission.bed_number|default:"-" }}</p>
+                        <p><strong>Admitted At:</strong> {{ admission.admitted_at }}</p>
+                        <p><strong>Discharged At:</strong> {{ admission.discharged_at|default:"-" }}</p>
+                        <p><strong>Days Admitted:</strong> {{ admission.days_admitted }}</p>
+                        <p><strong>Discharge Summary:</strong> {{ admission.discharge_summary|default:"-" }}</p>
+
+                        <div class="mt-4">
+                            <p class="font-semibold mb-2">Inpatient Notes</p>
+                            <div class="space-y-2">
+                                {% for note in admission.notes.all %}
+                                    <div class="border border-base-300 rounded-lg p-3">
+                                        <p><strong>{{ note.get_note_type_display }}</strong></p>
+                                        <p>{{ note.note }}</p>
+                                        <p class="text-sm text-base-content/70 mt-2">{{ note.created_by_stamp }}</p>
+                                    </div>
+                                {% empty %}
+                                    <p>No inpatient notes.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <p class="font-semibold mb-2">Medication Administration</p>
+                            <div class="space-y-2">
+                                {% for med in admission.medication_administrations.all %}
+                                    <div class="border border-base-300 rounded-lg p-3">
+                                        <p><strong>{{ med.medication_name }}</strong></p>
+                                        <p><strong>Dosage:</strong> {{ med.dosage|default:"-" }}</p>
+                                        <p><strong>Frequency:</strong> {{ med.frequency|default:"-" }}</p>
+                                        <p><strong>Route:</strong> {{ med.get_route_display }}</p>
+                                        <p><strong>Notes:</strong> {{ med.administration_notes|default:"-" }}</p>
+                                        <p class="text-sm text-base-content/70 mt-2">{{ med.administered_by_stamp }}</p>
+                                    </div>
+                                {% empty %}
+                                    <p>No medication administration records.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>No admission history yet.</p>
                 {% endfor %}
             </div>
         </div>

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.dashboards.apps.DashboardsConfig",
     "apps.auditlog.apps.AuditlogConfig",
     "apps.core.apps.CoreConfig",
+    "apps.admissions.apps.AdmissionsConfig",
 ]
 
 MIDDLEWARE = [

@@ -8,9 +8,16 @@
             <h1 class="text-3xl font-bold">Consultation</h1>
             <p class="text-base-content/70">{{ consultation.patient.full_name }} — {{ consultation.consulted_by_stamp }}</p>
         </div>
-        <a href="{% url 'consultation_complete' consultation.pk %}" class="btn btn-success text-white">
-            Mark Complete
-        </a>
+        <div class="flex gap-2">
+            {% if consultation.admitted %}
+                <a href="{% url 'admission_create_from_consultation' consultation.pk %}" class="btn btn-secondary">
+                    Admit Patient
+                </a>
+            {% endif %}
+            <a href="{% url 'consultation_complete' consultation.pk %}" class="btn btn-success text-white">
+                Mark Complete
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
