@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 from apps.billing.models import Billing
+from apps.billing.services import get_patient_outstanding_balance
 from apps.patients.models import Patient, PatientRecord
 from apps.waiting_room.models import WaitingRoomEntry
 from .models import Consultation
@@ -98,14 +99,17 @@ def start_consultation_for_next_patient(doctor):
         status=Consultation.Status.IN_PROGRESS,
     )
 
+    brought_forward_balance = get_patient_outstanding_balance(entry.patient)
+
     billing = Billing.objects.create(
         patient=entry.patient,
         consultation=consultation,
         created_by=doctor,
         consultation_fee=DEFAULT_CONSULTATION_FEE,
+        brought_forward_balance=brought_forward_balance,
     )
     billing.recalculate_total()
-    billing.save(update_fields=["total_amount"])
+    billing.save(update_fields=["total_amount", "balance", "payment_status"])
 
     return consultation
 

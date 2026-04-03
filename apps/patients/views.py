@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from apps.accounts.models import Role
 from .forms import PatientForm
 from .models import Patient
 
@@ -34,6 +35,10 @@ def patient_list(request):
 def patient_detail(request, pk):
     patient = get_object_or_404(Patient, pk=pk)
     records = patient.records.select_related("created_by", "edited_by", "consultation").order_by("-created_at")
+    billing_history = None
+
+    if request.user.role == Role.ACCOUNTANT or request.user.is_superuser:
+        billing_history = patient.billings.select_related("consultation", "handled_by").order_by("-created_at")
 
     return render(
         request,
@@ -41,6 +46,7 @@ def patient_detail(request, pk):
         {
             "patient": patient,
             "records": records,
+            "billing_history": billing_history,
         },
     )
 

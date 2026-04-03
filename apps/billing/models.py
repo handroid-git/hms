@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from apps.patients.models import Patient
 from apps.consultations.models import Consultation
 
@@ -46,6 +47,7 @@ class Billing(models.Model):
     prescription_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     medication_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     other_charges = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    brought_forward_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
 
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
@@ -58,6 +60,9 @@ class Billing(models.Model):
         default=PaymentStatus.UNPAID,
     )
     is_archived = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    internal_note = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -71,6 +76,7 @@ class Billing(models.Model):
             + self.prescription_total
             + self.medication_total
             + self.other_charges
+            + self.brought_forward_balance
             + extras_total
             - self.discount
         )
@@ -99,6 +105,19 @@ class Billing(models.Model):
         if self.handled_by:
             return f"{self.handled_by.get_full_name() or self.handled_by.username} | {self.updated_at:%Y-%m-%d %H:%M}"
         return "Not yet handled"
+
+    @property
+    def can_edit_archived_amounts(self):
+        if not self.is_archived:
+            return True
+        return self.payment_status in [self.PaymentStatus.UNPAID, self.PaymentStatus.PART_PAYMENT, self.PaymentStatus.DEPOSIT]
+
+    def archive(self, user=None):
+        self.is_archived = True
+        self.archived_at = timezone.now()
+        if user:
+            self.handled_by = user
+        self.save(update_fields=["is_archived", "archived_at", "handled_by", "updated_at"])
 
     def __str__(self):
         return f"Billing - {self.patient.full_name}"

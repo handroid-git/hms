@@ -6,6 +6,11 @@
     <div>
         <h1 class="text-3xl font-bold">Billing Detail</h1>
         <p class="text-base-content/70">{{ billing.patient.full_name }} — {{ billing.patient.hospital_number }}</p>
+        {% if billing.is_archived %}
+            <div class="alert alert-info mt-3">
+                <span>Archived bill{% if billing.archived_at %} on {{ billing.archived_at }}{% endif %}</span>
+            </div>
+        {% endif %}
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -13,6 +18,7 @@
             <div class="card-body">
                 <h2 class="card-title">Bill Summary</h2>
                 <p><strong>Consultation Fee:</strong> ₦{{ billing.consultation_fee }}</p>
+                <p><strong>Brought Forward Balance:</strong> ₦{{ billing.brought_forward_balance }}</p>
                 <p><strong>Lab Total:</strong> ₦{{ billing.lab_total }}</p>
                 <p><strong>Prescription Total:</strong> ₦{{ billing.prescription_total }}</p>
                 <p><strong>Medication Total:</strong> ₦{{ billing.medication_total }}</p>
@@ -42,76 +48,88 @@
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Update Bill</h2>
+                <h2 class="card-title">Accountant Note</h2>
                 <form method="post" class="space-y-4">
                     {% csrf_token %}
-
-                    <div>
-                        <label class="label"><span class="label-text">Other Charges</span></label>
-                        {{ billing_form.other_charges }}
-                    </div>
-
-                    <div>
-                        <label class="label"><span class="label-text">Discount</span></label>
-                        {{ billing_form.discount }}
-                    </div>
-
-                    <button type="submit" name="update_billing" class="btn btn-primary">Save Billing Changes</button>
+                    {{ note_form.internal_note }}
+                    <button type="submit" name="update_note" class="btn btn-secondary">Save Note</button>
                 </form>
 
-                <div class="divider"></div>
+                {% if billing.can_edit_archived_amounts %}
+                    <div class="divider"></div>
 
-                <h3 class="font-semibold text-lg">Add Extra Bill Item</h3>
-                <form method="post" class="space-y-4 mt-3">
-                    {% csrf_token %}
-                    <div>
-                        <label class="label"><span class="label-text">Title</span></label>
-                        {{ extra_item_form.title }}
-                    </div>
-                    <div>
-                        <label class="label"><span class="label-text">Price</span></label>
-                        {{ extra_item_form.price }}
-                    </div>
-                    <button type="submit" name="add_extra_item" class="btn btn-secondary">Add Extra Item</button>
-                </form>
+                    <h2 class="card-title">Update Bill</h2>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="label"><span class="label-text">Other Charges</span></label>
+                            {{ billing_form.other_charges }}
+                        </div>
 
-                {% if billing.payment_status == "PAID_FULL" %}
+                        <div>
+                            <label class="label"><span class="label-text">Discount</span></label>
+                            {{ billing_form.discount }}
+                        </div>
+
+                        <button type="submit" name="update_billing" class="btn btn-primary">Save Billing Changes</button>
+                    </form>
+
+                    <div class="divider"></div>
+
+                    <h3 class="font-semibold text-lg">Add Extra Bill Item</h3>
+                    <form method="post" class="space-y-4 mt-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="label"><span class="label-text">Title</span></label>
+                            {{ extra_item_form.title }}
+                        </div>
+                        <div>
+                            <label class="label"><span class="label-text">Price</span></label>
+                            {{ extra_item_form.price }}
+                        </div>
+                        <button type="submit" name="add_extra_item" class="btn btn-secondary">Add Extra Item</button>
+                    </form>
+                {% endif %}
+
+                {% if not billing.is_archived %}
                     <div class="divider"></div>
                     <form method="post">
                         {% csrf_token %}
-                        <button type="submit" name="archive_bill" class="btn btn-outline">Archive Fully Paid Bill</button>
+                        <button type="submit" name="archive_bill" class="btn btn-outline">Archive Bill</button>
                     </form>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
-            <h2 class="card-title">Receive Payment</h2>
-            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {% csrf_token %}
-                <div>
-                    <label class="label"><span class="label-text">Amount</span></label>
-                    {{ payment_form.amount }}
-                </div>
+    {% if billing.can_edit_archived_amounts %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Receive Payment</h2>
+                <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="label"><span class="label-text">Amount</span></label>
+                        {{ payment_form.amount }}
+                    </div>
 
-                <div>
-                    <label class="label"><span class="label-text">Payment Type</span></label>
-                    {{ payment_form.payment_type }}
-                </div>
+                    <div>
+                        <label class="label"><span class="label-text">Payment Type</span></label>
+                        {{ payment_form.payment_type }}
+                    </div>
 
-                <div class="md:col-span-2">
-                    <label class="label"><span class="label-text">Notes</span></label>
-                    {{ payment_form.notes }}
-                </div>
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Notes</span></label>
+                        {{ payment_form.notes }}
+                    </div>
 
-                <div class="md:col-span-2">
-                    <button type="submit" name="receive_payment" class="btn btn-success text-white">Receive Payment</button>
-                </div>
-            </form>
+                    <div class="md:col-span-2">
+                        <button type="submit" name="receive_payment" class="btn btn-success text-white">Receive Payment</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
+    {% endif %}
 
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">

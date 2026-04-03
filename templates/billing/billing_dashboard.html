@@ -5,35 +5,91 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-3xl font-bold">Billing Dashboard</h1>
-        <p class="text-base-content/70">Overview of bill generation and payment processing.</p>
+        <p class="text-base-content/70">Active bill monitoring for accountant workflow.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Generated Today</h2>
-                <p class="text-3xl font-bold">₦{{ total_generated_today }}</p>
+                <h2 class="card-title">Unpaid Bills</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in unpaid_bills %}
+                                <tr>
+                                    <td>{{ bill.patient.full_name }}</td>
+                                    <td>₦{{ bill.balance }}</td>
+                                    <td><a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No unpaid bills.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Paid Today</h2>
-                <p class="text-3xl font-bold">₦{{ total_paid_today }}</p>
+                <h2 class="card-title">Part Paid Bills</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in part_paid_bills %}
+                                <tr>
+                                    <td>{{ bill.patient.full_name }}</td>
+                                    <td>₦{{ bill.balance }}</td>
+                                    <td><a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No part-paid bills.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Bills Count Today</h2>
-                <p class="text-3xl font-bold">{{ bills_today_count }}</p>
-            </div>
-        </div>
-
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title text-lg">All-Time Processed</h2>
-                <p class="text-3xl font-bold">{{ all_time_processed }}</p>
+                <h2 class="card-title">Completed Today</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Paid</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in recent_completed_today %}
+                                <tr>
+                                    <td>{{ bill.patient.full_name }}</td>
+                                    <td>₦{{ bill.amount_paid }}</td>
+                                    <td><a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">No completed bills today.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

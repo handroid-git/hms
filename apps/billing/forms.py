@@ -37,3 +37,12 @@ class PaymentTransactionForm(forms.ModelForm):
         if amount <= 0:
             raise forms.ValidationError("Payment amount must be greater than zero.")
         return amount
+
+
+class BillingNoteForm(forms.ModelForm):
+    class Meta:
+        model = Billing
+        fields = ["internal_note"]
+        widgets = {
+            "internal_note": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 4}),
+        }

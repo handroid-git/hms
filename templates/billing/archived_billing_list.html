@@ -3,7 +3,25 @@
 
 {% block content %}
 <div class="space-y-4">
-    <h1 class="text-3xl font-bold">Archived Fully Paid Bills</h1>
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <h1 class="text-3xl font-bold">Archived Bills</h1>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="flex flex-col md:flex-row gap-3">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Search by patient name or hospital number"
+                    class="input input-bordered w-full"
+                >
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="{% url 'archived_billing_list' %}" class="btn btn-outline">Clear</a>
+            </form>
+        </div>
+    </div>
 
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body overflow-x-auto">
@@ -13,7 +31,9 @@
                         <th>Patient</th>
                         <th>Total</th>
                         <th>Paid</th>
-                        <th>Archived</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -22,10 +42,14 @@
                             <td>{{ bill.patient.full_name }}</td>
                             <td>₦{{ bill.total_amount }}</td>
                             <td>₦{{ bill.amount_paid }}</td>
-                            <td>Yes</td>
+                            <td>₦{{ bill.balance }}</td>
+                            <td>{{ bill.get_payment_status_display }}</td>
+                            <td>
+                                <a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">Open</a>
+                            </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="4">No archived bills.</td></tr>
+                        <tr><td colspan="6">No archived bills found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
