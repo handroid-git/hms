@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.db import models, transaction
 from django.utils import timezone
+from apps.notifications.services import notify_pharmacists_payment_ready
 from .models import Billing, BillingExtraItem, PaymentTransaction
 
 
@@ -72,6 +73,10 @@ def receive_payment(billing, handled_by, amount, payment_type, notes=""):
     billing.handled_by = handled_by
     billing.recalculate_total()
     billing.save()
+
+    if billing.consultation:
+        for prescription_item in billing.consultation.prescription_items.all():
+            notify_pharmacists_payment_ready(prescription_item)
 
     return billing
 

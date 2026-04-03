@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from apps.accounts.models import Role, User
+from apps.notifications.services import notify_waiting_room_overload
 from apps.patients.models import TriageRecord
 from .forms import WaitingRoomEntryForm
 from .models import WaitingRoomEntry
@@ -22,6 +24,14 @@ def waiting_room_list(request):
             "entry": entry,
             "position": get_queue_position(entry, entries),
         })
+
+    if waiting_room_is_overloaded():
+        alert_users = User.objects.filter(
+            role__in=[Role.NURSE, Role.DOCTOR],
+            is_active=True,
+            is_verified_staff=True,
+        )
+        notify_waiting_room_overload(alert_users, len(entries))
 
     return render(
         request,
