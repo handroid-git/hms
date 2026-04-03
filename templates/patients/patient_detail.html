@@ -8,11 +8,18 @@
             <h1 class="text-3xl font-bold">{{ patient.full_name }}</h1>
             <p class="text-base-content/70">Hospital Number: {{ patient.hospital_number }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
             <a href="{% url 'patient_update' patient.pk %}" class="btn btn-outline">Edit Patient</a>
+
             {% if request.user.role == "NURSE" or request.user.is_superuser %}
                 <a href="{% url 'waiting_room_add' %}?patient={{ patient.pk }}" class="btn btn-primary">
                     Add to Waiting Room
+                </a>
+            {% endif %}
+
+            {% if request.user.role == "ADMIN" or request.user.is_superuser %}
+                <a href="{% url 'patient_delete' patient.pk %}" class="btn btn-error text-white">
+                    Delete Patient
                 </a>
             {% endif %}
         </div>

@@ -83,3 +83,25 @@ def patient_update(request, pk):
         form = PatientForm(instance=patient)
 
     return render(request, "patients/patient_form.html", {"form": form, "title": "Update Patient"})
+
+
+@login_required
+def patient_delete(request, pk):
+    patient = get_object_or_404(Patient, pk=pk)
+
+    if not (request.user.role == Role.ADMIN or request.user.is_superuser):
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    if request.method == "POST":
+        patient_name = patient.full_name
+        patient.delete()
+        messages.success(request, f"Patient '{patient_name}' was deleted successfully.")
+        return redirect("patient_list")
+
+    return render(
+        request,
+        "patients/patient_confirm_delete.html",
+        {
+            "patient": patient,
+        },
+    )

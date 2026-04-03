@@ -1,14 +1,10 @@
 from django.urls import path
-from .views import (
-    patient_create,
-    patient_detail,
-    patient_list,
-    patient_update,
-)
+from .views import patient_create, patient_delete, patient_detail, patient_list, patient_update
 
 urlpatterns = [
     path("", patient_list, name="patient_list"),
     path("create/", patient_create, name="patient_create"),
     path("<uuid:pk>/", patient_detail, name="patient_detail"),
     path("<uuid:pk>/update/", patient_update, name="patient_update"),
+    path("<uuid:pk>/delete/", patient_delete, name="patient_delete"),
 ]
