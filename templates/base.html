@@ -6,6 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Hospital Management System{% endblock %}</title>
     {% tailwind_css %}
+    <style>
+        @keyframes bell-shake {
+            0% { transform: rotate(0deg); }
+            15% { transform: rotate(15deg); }
+            30% { transform: rotate(-12deg); }
+            45% { transform: rotate(10deg); }
+            60% { transform: rotate(-8deg); }
+            75% { transform: rotate(6deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .bell-shake {
+            animation: bell-shake 0.7s ease-in-out;
+        }
+    </style>
 </head>
 <body class="bg-base-200 min-h-screen flex flex-col">
 
@@ -17,20 +32,40 @@
             <div class="flex-none lg:hidden">
                 <label for="sidebar-drawer" class="btn btn-square btn-ghost text-white">☰</label>
             </div>
+
             <div class="flex-1 px-2">
                 <a href="{% url 'home' %}" class="text-xl font-bold hover:opacity-90">
                     HMS
                 </a>
             </div>
+
             <div class="flex-none gap-2">
                 <button id="theme-toggle" type="button" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
                     Toggle Theme
                 </button>
 
                 {% if request.user.is_authenticated %}
+                    <a href="{% url 'notification_list' %}"
+                       id="notification-bell-link"
+                       class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700 relative">
+                        <span id="notification-bell" class="inline-block text-lg">🔔</span>
+                        {% if unread_notifications_count > 0 %}
+                            <span id="notification-badge"
+                                  class="absolute -top-2 -right-2 badge badge-warning text-black font-bold animate-pulse">
+                                {{ unread_notifications_count }}
+                            </span>
+                        {% else %}
+                            <span id="notification-badge"
+                                  class="absolute -top-2 -right-2 badge badge-warning text-black font-bold hidden">
+                                0
+                            </span>
+                        {% endif %}
+                    </a>
+
                     <a href="{% url 'profile' %}" class="btn btn-ghost btn-sm text-white">
                         {{ request.user.get_full_name|default:request.user.username }}
                     </a>
+
                     <form method="post" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-error btn-sm text-white">Logout</button>
@@ -63,20 +98,38 @@
             <ul class="menu p-4 gap-1">
                 <li><a href="{% url 'dashboard_redirect' %}">Dashboard</a></li>
 
+                <li>
+                    <a href="{% url 'notification_list' %}" class="flex items-center justify-between">
+                        <span>Notifications</span>
+                        {% if unread_notifications_count > 0 %}
+                            <span id="sidebar-notification-badge" class="badge badge-warning animate-pulse">
+                                {{ unread_notifications_count }}
+                            </span>
+                        {% else %}
+                            <span id="sidebar-notification-badge" class="badge badge-warning hidden">
+                                0
+                            </span>
+                        {% endif %}
+                    </a>
+                </li>
+
                 {% if request.user.role == "NURSE" or request.user.role == "DOCTOR" or request.user.is_superuser %}
                     <li><a href="{% url 'patient_list' %}">Patients</a></li>
                     <li><a href="{% url 'admission_list' %}">Admissions</a></li>
+                    <li><a href="{% url 'appointment_list' %}">Appointments</a></li>
                 {% endif %}
 
                 {% if request.user.role == "NURSE" or request.user.is_superuser %}
                     <li><a href="{% url 'patient_create' %}">Create Patient</a></li>
                     <li><a href="{% url 'waiting_room_list' %}">Waiting Room</a></li>
                     <li><a href="{% url 'waiting_room_add' %}">Add to Waiting Room</a></li>
+                    <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
                 {% endif %}
 
                 {% if request.user.role == "DOCTOR" or request.user.is_superuser %}
                     <li><a href="{% url 'doctor_dashboard' %}">Doctor Dashboard</a></li>
                     <li><a href="{% url 'doctor_consultation_start' %}">Start Consultation</a></li>
+                    <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
                 {% endif %}
 
                 {% if request.user.role == "LAB_TECHNICIAN" or request.user.is_superuser %}
@@ -121,6 +174,69 @@
                 localStorage.setItem("hms-theme", nextTheme);
             });
         }
+
+        const bell = document.getElementById("notification-bell");
+        const badge = document.getElementById("notification-badge");
+        const sidebarBadge = document.getElementById("sidebar-notification-badge");
+
+        let lastUnreadCount = {{ unread_notifications_count|default:0 }};
+
+        function updateNotificationUI(unreadCount) {
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.classList.remove("hidden");
+                    badge.classList.add("animate-pulse");
+                } else {
+                    badge.textContent = "0";
+                    badge.classList.add("hidden");
+                    badge.classList.remove("animate-pulse");
+                }
+            }
+
+            if (sidebarBadge) {
+                if (unreadCount > 0) {
+                    sidebarBadge.textContent = unreadCount;
+                    sidebarBadge.classList.remove("hidden");
+                    sidebarBadge.classList.add("animate-pulse");
+                } else {
+                    sidebarBadge.textContent = "0";
+                    sidebarBadge.classList.add("hidden");
+                    sidebarBadge.classList.remove("animate-pulse");
+                }
+            }
+
+            if (bell && unreadCount > lastUnreadCount) {
+                bell.classList.remove("bell-shake");
+                void bell.offsetWidth;
+                bell.classList.add("bell-shake");
+            }
+
+            lastUnreadCount = unreadCount;
+        }
+
+        async function pollNotifications() {
+            try {
+                const response = await fetch("{% url 'notification_unread_count' %}", {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                updateNotificationUI(data.unread_count);
+            } catch (error) {
+                console.error("Notification polling error:", error);
+            }
+        }
+
+        {% if request.user.is_authenticated %}
+            setInterval(pollNotifications, 5000);
+        {% endif %}
     });
 </script>
 

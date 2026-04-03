@@ -1,6 +1,11 @@
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
+from apps.notifications.services import (
+    notify_doctor_lab_ready,
+    notify_doctor_lab_unavailable,
+    notify_lab_rejected,
+)
 from .models import LabRequest, LabRequestItem, LabResultAttachment
 
 
@@ -26,7 +31,6 @@ def sync_lab_requests_for_consultation(consultation, selected_tests, requested_b
         for item in lab_request.items.select_related("lab_test").all()
     }
 
-    # Create newly selected tests only
     for test in selected_tests:
         if test.pk not in existing_items:
             LabRequestItem.objects.create(
@@ -36,8 +40,6 @@ def sync_lab_requests_for_consultation(consultation, selected_tests, requested_b
                 status=LabRequestItem.Status.PENDING,
             )
 
-    # Remove deselected tests only if they have not already been accepted.
-    # Accepted results should remain part of the consultation/session record.
     for lab_test_id, item in existing_items.items():
         if lab_test_id not in selected_test_ids and item.status != LabRequestItem.Status.ACCEPTED:
             item.attachments.all().delete()
@@ -88,6 +90,8 @@ def update_billing_lab_total(consultation):
 def update_lab_request_status(lab_request):
     items = list(lab_request.items.all())
 
+    previous_status = lab_request.status
+
     if not items:
         lab_request.status = LabRequest.Status.PENDING
         lab_request.ready_at = None
@@ -118,6 +122,9 @@ def update_lab_request_status(lab_request):
 
     lab_request.save(update_fields=["status", "ready_at", "updated_at"])
 
+    if lab_request.status == LabRequest.Status.READY and previous_status != LabRequest.Status.READY:
+        notify_doctor_lab_ready(lab_request)
+
 
 @transaction.atomic
 def technician_update_result_item(item, form, files, user):
@@ -145,6 +152,10 @@ def technician_update_result_item(item, form, files, user):
     update_lab_request_status(item.lab_request)
     update_billing_lab_total(item.lab_request.consultation)
     update_consultation_lab_summary(item.lab_request.consultation)
+
+    if item.status == LabRequestItem.Status.UNAVAILABLE:
+        notify_doctor_lab_unavailable(item.lab_request, item)
+
     return item
 
 
@@ -170,3 +181,4 @@ def doctor_reject_result(item, doctor):
     update_lab_request_status(item.lab_request)
     update_billing_lab_total(item.lab_request.consultation)
     update_consultation_lab_summary(item.lab_request.consultation)
+    notify_lab_rejected(item)

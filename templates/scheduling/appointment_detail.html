@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Appointment Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+    <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+            <h1 class="text-3xl font-bold">Appointment Detail</h1>
+            <p class="text-base-content/70">{{ appointment.patient.full_name }} — {{ appointment.get_status_display }}</p>
+        </div>
+
+        <div class="flex gap-2 flex-wrap">
+            {% if request.user.role == "NURSE" or request.user.role == "ADMIN" %}
+                {% if appointment.status == "SCHEDULED" or appointment.status == "REASSIGNED" %}
+                    <a href="{% url 'appointment_check_in' appointment.pk %}" class="btn btn-primary">
+                        Check In Patient
+                    </a>
+                {% endif %}
+            {% endif %}
+
+            {% if request.user.role == "DOCTOR" or request.user.role == "ADMIN" %}
+                {% if appointment.status == "CHECKED_IN" %}
+                    <a href="{% url 'appointment_complete' appointment.pk %}" class="btn btn-success text-white">
+                        Mark Completed
+                    </a>
+                {% endif %}
+            {% endif %}
+
+            {% if request.user.role == "DOCTOR" or request.user.role == "NURSE" or request.user.role == "ADMIN" %}
+                {% if appointment.status != "COMPLETED" and appointment.status != "CANCELLED" %}
+                    <a href="{% url 'appointment_cancel' appointment.pk %}" class="btn btn-error text-white">
+                        Cancel
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Appointment Information</h2>
+            <p><strong>Patient:</strong> {{ appointment.patient.full_name }}</p>
+            <p><strong>Original Doctor:</strong> {{ appointment.doctor|default:"-" }}</p>
+            <p><strong>Assigned Doctor:</strong> {{ appointment.assigned_doctor|default:"-" }}</p>
+            <p><strong>Date:</strong> {{ appointment.appointment_date }}</p>
+            <p><strong>Time:</strong> {{ appointment.appointment_time }}</p>
+            <p><strong>Status:</strong> {{ appointment.get_status_display }}</p>
+            <p><strong>Reason:</strong> {{ appointment.reason|default:"-" }}</p>
+            <p><strong>Notes:</strong> {{ appointment.notes|default:"-" }}</p>
+            <p><strong>Checked In At:</strong> {{ appointment.checked_in_at|default:"-" }}</p>
+            <p><strong>Completed At:</strong> {{ appointment.completed_at|default:"-" }}</p>
+            <p><strong>Cancelled At:</strong> {{ appointment.cancelled_at|default:"-" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

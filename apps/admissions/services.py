@@ -1,5 +1,9 @@
 from django.db import transaction
 from django.utils import timezone
+from apps.notifications.services import (
+    notify_doctor_discharge_confirmed,
+    notify_nurse_discharge_confirmation_needed,
+)
 from apps.patients.models import Patient
 from .models import Admission
 
@@ -52,6 +56,8 @@ def doctor_mark_discharge_pending(admission, discharged_by, discharge_summary=""
             "updated_at",
         ]
     )
+
+    notify_nurse_discharge_confirmation_needed(admission)
     return admission
 
 
@@ -75,4 +81,5 @@ def nurse_confirm_discharge(admission, nurse_user, nurse_note=""):
     patient.updated_by = nurse_user
     patient.save(update_fields=["admission_status", "discharged_at", "updated_by"])
 
+    notify_doctor_discharge_confirmed(admission)
     return admission
