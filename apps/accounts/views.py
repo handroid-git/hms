@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.notifications.forms import NotificationPreferenceForm
 from apps.notifications.services import get_or_create_notification_preference
 
-from .forms import LoginForm, ProfileUpdateForm
+from .forms import LoginForm, ProfileUpdateForm, StaffSignupForm
 from .models import Role
 
 
@@ -24,6 +24,25 @@ class UserLoginView(LoginView):
             timezone.now() + timedelta(minutes=5)
         ).isoformat()
         return response
+
+
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard_redirect")
+
+    if request.method == "POST":
+        form = StaffSignupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Your staff account request was submitted successfully. Please wait for administrator verification.",
+            )
+            return redirect("login")
+    else:
+        form = StaffSignupForm()
+
+    return render(request, "accounts/signup.html", {"form": form})
 
 
 @login_required

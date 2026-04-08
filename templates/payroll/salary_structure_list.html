@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Salary Structures{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Salary Structures</h1>
+            <p class="text-base-content/70">Define base salary for each staff member.</p>
+        </div>
+        <a href="{% url 'salary_structure_create' %}" class="btn btn-primary">Create Salary Structure</a>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Staff</th>
+                        <th>Role</th>
+                        <th>Base Salary</th>
+                        <th>Active</th>
+                        <th>Effective From</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for structure in structures %}
+                        <tr>
+                            <td>{{ structure.staff.get_full_name|default:structure.staff.username }}</td>
+                            <td>{{ structure.staff.get_role_display }}</td>
+                            <td>₦{{ structure.base_salary }}</td>
+                            <td>{{ structure.is_active|yesno:"Yes,No" }}</td>
+                            <td>{{ structure.effective_from|default:"-" }}</td>
+                            <td><a href="{% url 'salary_structure_update' structure.pk %}" class="btn btn-sm btn-outline">Edit</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6">No salary structures yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

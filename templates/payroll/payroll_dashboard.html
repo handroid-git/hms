@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Payroll Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Payroll Dashboard</h1>
+        <p class="text-base-content/70">Manage salary structures and payroll generation.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Payroll Generated</h2>
+                <p class="text-3xl font-bold">₦{{ total_generated }}</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Payroll Paid</h2>
+                <p class="text-3xl font-bold">₦{{ total_paid }}</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Pending Payroll</h2>
+                <p class="text-3xl font-bold">₦{{ pending_total }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Generate Payroll</h2>
+                <form method="post" action="{% url 'payroll_generate' %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="label"><span class="label-text">Year</span></label>
+                        {{ generate_form.year }}
+                    </div>
+                    <div>
+                        <label class="label"><span class="label-text">Month</span></label>
+                        {{ generate_form.month }}
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn btn-primary">Generate Payroll</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Quick Links</h2>
+                <div class="flex flex-col gap-3">
+                    <a href="{% url 'payroll_list' %}" class="btn btn-outline">View Payroll Records</a>
+                    <a href="{% url 'salary_structure_list' %}" class="btn btn-outline">View Salary Structures</a>
+                    <a href="{% url 'salary_structure_create' %}" class="btn btn-outline">Create Salary Structure</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Recent Payroll Records</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Staff</th>
+                            <th>Period</th>
+                            <th>Net Pay</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payroll in recent_payrolls %}
+                            <tr>
+                                <td>{{ payroll.staff.get_full_name|default:payroll.staff.username }}</td>
+                                <td>{{ payroll.period_label }}</td>
+                                <td>₦{{ payroll.net_pay }}</td>
+                                <td>{{ payroll.get_status_display }}</td>
+                                <td><a href="{% url 'payroll_detail' payroll.pk %}" class="btn btn-sm btn-outline">Open</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No payroll records yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
