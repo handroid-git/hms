@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Conversation{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">
+                Conversation with
+                {% for participant in other_participants %}
+                    {{ participant.get_full_name|default:participant.username }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </h1>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div id="chat-messages-container" class="card-body space-y-4 max-h-[500px] overflow-y-auto">
+            {% for message in messages_list %}
+                <div class="chat {% if message.sender == request.user %}chat-end{% else %}chat-start{% endif %}"
+                     data-message-id="{{ message.pk }}">
+                    <div class="chat-header text-sm text-base-content/70 mb-1">
+                        {{ message.sender.get_full_name|default:message.sender.username }}
+                        <time class="text-xs opacity-70 ml-2">{{ message.created_at|date:"Y-m-d H:i:s" }}</time>
+                    </div>
+                    <div class="chat-bubble {% if message.sender == request.user %}chat-bubble-primary{% endif %}">
+                        {{ message.body|linebreaksbr }}
+                    </div>
+                </div>
+            {% empty %}
+                <p id="no-messages-placeholder">No messages yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <form id="chat-message-form" method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="label"><span class="label-text">Message</span></label>
+                    {{ form.body }}
+                    <p id="chat-form-error" class="text-error text-sm mt-1 hidden"></p>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("chat-message-form");
+        const messagesContainer = document.getElementById("chat-messages-container");
+        const errorBox = document.getElementById("chat-form-error");
+        const bodyField = document.getElementById("id_body");
+        const messagesJsonUrl = "{% url 'conversation_messages_json' conversation.pk %}";
+        const submitUrl = "{% url 'conversation_detail' conversation.pk %}";
+        let lastMessageCount = messagesContainer.querySelectorAll("[data-message-id]").length;
+
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function nl2br(text) {
+            return escapeHtml(text).replace(/\n/g, "<br>");
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function renderMessages(messages) {
+            if (!messages.length) {
+                messagesContainer.innerHTML = '<p id="no-messages-placeholder">No messages yet.</p>';
+                return;
+            }
+
+            messagesContainer.innerHTML = messages.map(message => `
+                <div class="chat ${message.is_mine ? 'chat-end' : 'chat-start'}" data-message-id="${message.id}">
+                    <div class="chat-header text-sm text-base-content/70 mb-1">
+                        ${escapeHtml(message.sender_name)}
+                        <time class="text-xs opacity-70 ml-2">${escapeHtml(message.created_at)}</time>
+                    </div>
+                    <div class="chat-bubble ${message.is_mine ? 'chat-bubble-primary' : ''}">
+                        ${nl2br(message.body)}
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        async function fetchMessages(shouldScrollIfNew = true) {
+            try {
+                const response = await fetch(messagesJsonUrl, {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                const newCount = data.messages.length;
+                const hasNewMessages = newCount > lastMessageCount;
+
+                renderMessages(data.messages);
+
+                if (hasNewMessages && shouldScrollIfNew) {
+                    scrollToBottom();
+                }
+
+                lastMessageCount = newCount;
+            } catch (error) {
+                console.error("Failed to fetch chat messages:", error);
+            }
+        }
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            errorBox.classList.add("hidden");
+            errorBox.textContent = "";
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(submitUrl, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    errorBox.textContent = "Unable to send message. Please try again.";
+                    errorBox.classList.remove("hidden");
+                    return;
+                }
+
+                bodyField.value = "";
+                await fetchMessages(true);
+                bodyField.focus();
+            } catch (error) {
+                errorBox.textContent = "Unable to send message. Please try again.";
+                errorBox.classList.remove("hidden");
+            }
+        });
+
+        scrollToBottom();
+        setInterval(() => fetchMessages(true), 3000);
+    });
+</script>
+{% endblock %}

@@ -18,6 +18,7 @@ urlpatterns = [
     path("admissions/", include("apps.admissions.urls")),
     path("appointments/", include("apps.scheduling.urls")),
     path("notifications/", include("apps.notifications.urls")),
+    path("chat/", include("apps.chat.urls")),
     path("dashboards/", include("apps.dashboards.urls")),
 ]
 

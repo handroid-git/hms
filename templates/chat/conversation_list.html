@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <div class="flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Staff Chat</h1>
+            <p class="text-base-content/70">Start and manage internal conversations.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Start Conversation</h2>
+                <form method="post" action="{% url 'start_conversation' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="label"><span class="label-text">Recipient</span></label>
+                        {{ start_form.recipient }}
+                        {% if start_form.recipient.errors %}
+                            <p class="text-error text-sm mt-1">{{ start_form.recipient.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Open Chat</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="xl:col-span-2 card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">My Conversations</h2>
+                <div class="space-y-3">
+                    {% for conversation in conversations %}
+                        <a href="{% url 'conversation_detail' conversation.pk %}"
+                           class="block border border-base-300 rounded-xl p-4 hover:bg-base-200 transition">
+                            <div class="flex justify-between items-center gap-3">
+                                <div>
+                                    <p class="font-semibold">
+                                        {% for participant in conversation.participants.all %}
+                                            {% if participant != request.user %}
+                                                {{ participant.get_full_name|default:participant.username }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                    <p class="text-sm text-base-content/70">
+                                        Last updated: {{ conversation.updated_at }}
+                                    </p>
+                                </div>
+
+                                {% if conversation.unread_count > 0 %}
+                                    <span class="badge badge-warning">{{ conversation.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% empty %}
+                        <p>No conversations yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

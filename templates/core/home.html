@@ -18,9 +18,22 @@
             <button id="theme-toggle" type="button" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
                 Toggle Theme
             </button>
-            <a href="{% url 'login' %}" class="btn btn-sm bg-white text-blue-800 border-white hover:bg-blue-100">
-                Staff Login
-            </a>
+
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'dashboard_redirect' %}" class="btn btn-sm bg-white text-blue-800 border-white hover:bg-blue-100">
+                    Dashboard
+                </a>
+                <form method="post" action="{% url 'logout' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-error text-white">
+                        Logout
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-sm bg-white text-blue-800 border-white hover:bg-blue-100">
+                    Staff Login
+                </a>
+            {% endif %}
         </div>
     </div>
 </header>
@@ -34,12 +47,18 @@
                 </h1>
                 <p class="text-lg text-base-content/80">
                     Manage patients, consultations, billing, laboratory workflow, pharmacy operations,
-                    admissions, and staff workflow from one unified platform.
+                    admissions, scheduling, chat, and staff workflow from one unified platform.
                 </p>
                 <div class="flex flex-wrap gap-3">
-                    <a href="{% url 'login' %}" class="btn bg-blue-800 text-white border-blue-800 hover:bg-blue-900">
-                        Staff Login
-                    </a>
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'dashboard_redirect' %}" class="btn bg-blue-800 text-white border-blue-800 hover:bg-blue-900">
+                            Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn bg-blue-800 text-white border-blue-800 hover:bg-blue-900">
+                            Staff Login
+                        </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -54,6 +73,7 @@
                         <li>Pharmacy and medication issuing</li>
                         <li>Billing and accountant workflow</li>
                         <li>Admissions and inpatient management</li>
+                        <li>Appointments, notifications, and chat</li>
                     </ul>
                 </div>
             </div>

@@ -17,12 +17,63 @@
             100% { transform: rotate(0deg); }
         }
 
+        @keyframes mail-bounce-loop {
+            0% { transform: translateY(0) scale(1); }
+            15% { transform: translateY(-5px) scale(1.08); }
+            30% { transform: translateY(0) scale(1); }
+            45% { transform: translateY(-3px) scale(1.05); }
+            60% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
         .bell-shake {
             animation: bell-shake 0.7s ease-in-out;
+        }
+
+        .mail-bounce-loop {
+            animation: mail-bounce-loop 1s ease-in-out infinite;
+        }
+
+        .floating-chat-link {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 5.5rem;
+            z-index: 40;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .floating-chat-link a {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(2px);
+            border-radius: 9999px;
+            padding: 0.35rem 0.55rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+
+        [data-theme="light"] .floating-chat-link a {
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+        [data-theme="dark"] .floating-chat-link a {
+            background: rgba(20, 20, 20, 0.18);
         }
     </style>
 </head>
 <body class="bg-base-200 min-h-screen flex flex-col">
+
+<div
+    id="app-config"
+    data-is-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}"
+    data-unread-notifications-count="{{ unread_notifications_count|default:0 }}"
+    data-unread-chat-count="{{ unread_chat_count|default:0 }}"
+    data-notifications-url="{% if request.user.is_authenticated %}{% url 'notification_unread_count' %}{% endif %}"
+    data-chat-unread-url="{% if request.user.is_authenticated %}{% url 'chat_unread_count' %}{% endif %}"
+></div>
 
 <div class="drawer lg:drawer-open flex-1">
     <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
@@ -62,7 +113,7 @@
                         {% endif %}
                     </a>
 
-                    <a href="{% url 'profile' %}" class="btn btn-ghost btn-sm text-white">
+                    <a href="{% url 'dashboard_redirect' %}" class="btn btn-ghost btn-sm text-white">
                         {{ request.user.get_full_name|default:request.user.username }}
                     </a>
 
@@ -113,6 +164,15 @@
                     </a>
                 </li>
 
+                <li>
+                    <a href="{% url 'conversation_list' %}" class="flex items-center justify-between">
+                        <span>Chat</span>
+                        <span id="sidebar-chat-icon" class="{% if unread_chat_count > 0 %}mail-bounce-loop{% endif %}">
+                            {% if unread_chat_count > 0 %}💌{% else %}✉️{% endif %}
+                        </span>
+                    </a>
+                </li>
+
                 {% if request.user.role == "NURSE" or request.user.role == "DOCTOR" or request.user.is_superuser %}
                     <li><a href="{% url 'patient_list' %}">Patients</a></li>
                     <li><a href="{% url 'admission_list' %}">Admissions</a></li>
@@ -123,12 +183,6 @@
                     <li><a href="{% url 'patient_create' %}">Create Patient</a></li>
                     <li><a href="{% url 'waiting_room_list' %}">Waiting Room</a></li>
                     <li><a href="{% url 'waiting_room_add' %}">Add to Waiting Room</a></li>
-                    <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
-                {% endif %}
-
-                {% if request.user.role == "DOCTOR" or request.user.is_superuser %}
-                    <li><a href="{% url 'doctor_dashboard' %}">Doctor Dashboard</a></li>
-                    <li><a href="{% url 'doctor_consultation_start' %}">Start Consultation</a></li>
                     <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
                 {% endif %}
 
@@ -156,89 +210,17 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const html = document.documentElement;
-        const themeToggle = document.getElementById("theme-toggle");
-        const savedTheme = localStorage.getItem("hms-theme");
+{% if request.user.is_authenticated %}
+    <div class="floating-chat-link">
+        <a href="{% url 'conversation_list' %}" aria-label="Open chat">
+            <span id="floating-chat-icon"
+                  class="text-3xl {% if unread_chat_count > 0 %}mail-bounce-loop{% endif %}">
+                {% if unread_chat_count > 0 %}💌{% else %}✉️{% endif %}
+            </span>
+        </a>
+    </div>
+{% endif %}
 
-        if (savedTheme) {
-            html.setAttribute("data-theme", savedTheme);
-        }
-
-        if (themeToggle) {
-            themeToggle.addEventListener("click", function () {
-                const currentTheme = html.getAttribute("data-theme") || "light";
-                const nextTheme = currentTheme === "light" ? "dark" : "light";
-                html.setAttribute("data-theme", nextTheme);
-                localStorage.setItem("hms-theme", nextTheme);
-            });
-        }
-
-        const bell = document.getElementById("notification-bell");
-        const badge = document.getElementById("notification-badge");
-        const sidebarBadge = document.getElementById("sidebar-notification-badge");
-
-        let lastUnreadCount = {{ unread_notifications_count|default:0 }};
-
-        function updateNotificationUI(unreadCount) {
-            if (badge) {
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount;
-                    badge.classList.remove("hidden");
-                    badge.classList.add("animate-pulse");
-                } else {
-                    badge.textContent = "0";
-                    badge.classList.add("hidden");
-                    badge.classList.remove("animate-pulse");
-                }
-            }
-
-            if (sidebarBadge) {
-                if (unreadCount > 0) {
-                    sidebarBadge.textContent = unreadCount;
-                    sidebarBadge.classList.remove("hidden");
-                    sidebarBadge.classList.add("animate-pulse");
-                } else {
-                    sidebarBadge.textContent = "0";
-                    sidebarBadge.classList.add("hidden");
-                    sidebarBadge.classList.remove("animate-pulse");
-                }
-            }
-
-            if (bell && unreadCount > lastUnreadCount) {
-                bell.classList.remove("bell-shake");
-                void bell.offsetWidth;
-                bell.classList.add("bell-shake");
-            }
-
-            lastUnreadCount = unreadCount;
-        }
-
-        async function pollNotifications() {
-            try {
-                const response = await fetch("{% url 'notification_unread_count' %}", {
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                });
-
-                if (!response.ok) {
-                    return;
-                }
-
-                const data = await response.json();
-                updateNotificationUI(data.unread_count);
-            } catch (error) {
-                console.error("Notification polling error:", error);
-            }
-        }
-
-        {% if request.user.is_authenticated %}
-            setInterval(pollNotifications, 5000);
-        {% endif %}
-    });
-</script>
-
+<script src="{% static 'js/base.js' %}"></script>
 </body>
 </html>
