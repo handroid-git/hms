@@ -67,6 +67,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.notifications.context_processors.notification_counts",
                 "apps.chat.context_processors.chat_counts",
+                "apps.accounts.context_processors.dashboard_identity",
             ],
         },
     },

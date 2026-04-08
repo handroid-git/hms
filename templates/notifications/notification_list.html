@@ -10,6 +10,10 @@
         </div>
 
         <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'notification_settings' %}" class="btn btn-outline">
+                Settings
+            </a>
+
             <a href="{% url 'notification_mark_all_read' %}" class="btn btn-outline">
                 Mark All Unread as Read
             </a>
@@ -29,7 +33,10 @@
                 <div class="card-body">
                     <div class="flex flex-wrap justify-between gap-3">
                         <div>
-                            <h2 class="card-title text-lg">{{ notification.title }}</h2>
+                            <div class="flex items-center gap-2">
+                                <h2 class="card-title text-lg">{{ notification.title }}</h2>
+                                <span class="badge badge-outline">{{ notification.get_category_display }}</span>
+                            </div>
                             <p>{{ notification.message }}</p>
                             <p class="text-sm text-base-content/60 mt-2">{{ notification.created_at }}</p>
                         </div>

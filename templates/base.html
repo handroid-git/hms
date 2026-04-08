@@ -73,6 +73,9 @@
     data-unread-chat-count="{{ unread_chat_count|default:0 }}"
     data-notifications-url="{% if request.user.is_authenticated %}{% url 'notification_unread_count' %}{% endif %}"
     data-chat-unread-url="{% if request.user.is_authenticated %}{% url 'chat_unread_count' %}{% endif %}"
+    data-is-dashboard-page="{% if is_dashboard_page %}true{% else %}false{% endif %}"
+    data-dashboard-identity-label="{{ dashboard_identity_label }}"
+    data-dashboard-welcome-until="{{ dashboard_welcome_until }}"
 ></div>
 
 <div class="drawer lg:drawer-open flex-1">
@@ -96,6 +99,10 @@
                 </button>
 
                 {% if request.user.is_authenticated %}
+                    <a href="{% url 'app_settings' %}" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
+                        ⚙️
+                    </a>
+
                     <a href="{% url 'notification_list' %}"
                        id="notification-bell-link"
                        class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700 relative">
@@ -114,7 +121,7 @@
                     </a>
 
                     <a href="{% url 'dashboard_redirect' %}" class="btn btn-ghost btn-sm text-white">
-                        {{ request.user.get_full_name|default:request.user.username }}
+                        Dashboard
                     </a>
 
                     <form method="post" action="{% url 'logout' %}" class="inline">
@@ -126,6 +133,15 @@
         </div>
 
         <main class="p-6 flex-1">
+            {% if request.user.is_authenticated and is_dashboard_page %}
+                <div class="flex justify-end mb-4">
+                    <div id="dashboard-greeting"
+                         class="text-sm md:text-base font-semibold text-base-content/80">
+                        {{ dashboard_identity_label }}
+                    </div>
+                </div>
+            {% endif %}
+
             {% include "partials/messages.html" %}
             {% block content %}{% endblock %}
         </main>
@@ -170,6 +186,13 @@
                         <span id="sidebar-chat-icon" class="{% if unread_chat_count > 0 %}mail-bounce-loop{% endif %}">
                             {% if unread_chat_count > 0 %}💌{% else %}✉️{% endif %}
                         </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'app_settings' %}" class="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <span>Settings</span>
                     </a>
                 </li>
 

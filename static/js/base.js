@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const floatingChatIcon = document.getElementById("floating-chat-icon");
     const sidebarChatIcon = document.getElementById("sidebar-chat-icon");
+    const dashboardGreeting = document.getElementById("dashboard-greeting");
 
     const savedTheme = localStorage.getItem("hms-theme");
 
@@ -32,6 +33,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const notificationsUrl = appConfig.dataset.notificationsUrl || "";
     const chatUnreadUrl = appConfig.dataset.chatUnreadUrl || "";
     const isAuthenticated = appConfig.dataset.isAuthenticated === "true";
+    const isDashboardPage = appConfig.dataset.isDashboardPage === "true";
+    const dashboardIdentityLabel = appConfig.dataset.dashboardIdentityLabel || "";
+    const dashboardWelcomeUntil = appConfig.dataset.dashboardWelcomeUntil || "";
 
     let lastUnreadNotificationCount = parseInt(appConfig.dataset.unreadNotificationsCount || "0", 10);
     let lastUnreadChatCount = parseInt(appConfig.dataset.unreadChatCount || "0", 10);
@@ -105,6 +109,26 @@ document.addEventListener("DOMContentLoaded", function () {
         lastUnreadChatCount = unreadChatCount;
     }
 
+    function updateDashboardGreeting() {
+        if (!dashboardGreeting || !isDashboardPage) {
+            return;
+        }
+
+        if (!dashboardWelcomeUntil) {
+            dashboardGreeting.textContent = dashboardIdentityLabel;
+            return;
+        }
+
+        const welcomeUntilDate = new Date(dashboardWelcomeUntil);
+        const now = new Date();
+
+        if (!isNaN(welcomeUntilDate.getTime()) && now < welcomeUntilDate) {
+            dashboardGreeting.textContent = `Welcome ${dashboardIdentityLabel}`;
+        } else {
+            dashboardGreeting.textContent = dashboardIdentityLabel;
+        }
+    }
+
     async function pollNotifications() {
         if (!notificationsUrl) return;
 
@@ -143,8 +167,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    updateDashboardGreeting();
+
     if (isAuthenticated) {
         setInterval(pollNotifications, 5000);
         setInterval(pollChatUnread, 3000);
+        setInterval(updateDashboardGreeting, 30000);
     }
 });

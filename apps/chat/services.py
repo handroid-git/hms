@@ -1,4 +1,5 @@
 from django.db import transaction
+from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 from .models import Conversation, Message, MessageReadReceipt
 
@@ -34,6 +35,7 @@ def send_message(conversation, sender, body):
             message=f"You received a new message from {sender.get_full_name() or sender.username}.",
             notification_type="INFO",
             link=f"/chat/conversations/{conversation.pk}/",
+            category=Notification.Category.CHAT,
         )
 
     return message

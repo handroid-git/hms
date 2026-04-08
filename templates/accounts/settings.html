@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">Settings</h1>
+            <p class="text-base-content/70">
+                Manage your account preferences, notifications, and quick access options.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Notification Preferences</h2>
+                    <form method="post" class="space-y-6">
+                        {% csrf_token %}
+
+                        <div class="flex items-center justify-between gap-4 p-4 rounded-lg bg-base-200">
+                            <div>
+                                <h3 class="font-semibold">Include chat alerts in general workflow bell 🔔</h3>
+                                <p class="text-sm text-base-content/70">
+                                    When enabled, chat message notifications will also count under the general workflow notification bell.
+                                    When disabled, chat stays only on 💌.
+                                </p>
+                            </div>
+                            <div>
+                                {{ notification_form.include_chat_in_general_notifications }}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Appearance</h2>
+                    <p class="text-base-content/70">
+                        Use the theme toggle in the navbar to switch between light and dark mode.
+                        Your choice is saved on this device.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Quick Links</h2>
+                    <div class="flex flex-col gap-3">
+                        <a href="{% url 'dashboard_redirect' %}" class="btn btn-outline">Dashboard</a>
+                        <a href="{% url 'profile' %}" class="btn btn-outline">My Profile</a>
+                        <a href="{% url 'notification_list' %}" class="btn btn-outline">Notifications</a>
+                        <a href="{% url 'conversation_list' %}" class="btn btn-outline">Chat</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Account</h2>
+                    <p><strong>Name:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p><strong>Role:</strong> {{ request.user.get_role_display }}</p>
+                    <p><strong>Email:</strong> {{ request.user.email|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
