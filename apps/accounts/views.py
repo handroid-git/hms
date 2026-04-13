@@ -60,7 +60,7 @@ def dashboard_redirect(request):
     elif role == Role.PHARMACIST:
         return redirect("pharmacy_dashboard")
     elif role == Role.ADMIN:
-        return redirect("admin:index")
+        return redirect("admin_dashboard")
 
     return redirect("login")
 

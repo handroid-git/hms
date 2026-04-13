@@ -2,7 +2,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+
 from apps.accounts.models import Role
+from apps.dashboards.services import pharmacy_dashboard_data
+
 from .forms import DrugForm, DrugIssueForm, PrescriptionItemUpdateForm
 from .models import Drug, PrescriptionItem
 from .services import issue_drug, prescription_is_paid
@@ -43,6 +46,7 @@ def pharmacy_dashboard(request):
         "expired_drugs": expired_drugs,
         "issued_today": issued_today,
         "issued_all_time": issued_all_time,
+        "data": pharmacy_dashboard_data(request.user),
     }
     return render(request, "pharmacy/pharmacy_dashboard.html", context)
 
@@ -98,7 +102,12 @@ def prescription_item_detail(request, pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     item = get_object_or_404(
-        PrescriptionItem.objects.select_related("patient", "drug", "consultation", "consultation__billing"),
+        PrescriptionItem.objects.select_related(
+            "patient",
+            "drug",
+            "consultation",
+            "consultation__billing",
+        ),
         pk=pk,
     )
 
@@ -137,7 +146,11 @@ def prescription_issue_view(request, pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     item = get_object_or_404(
-        PrescriptionItem.objects.select_related("drug", "consultation", "consultation__billing"),
+        PrescriptionItem.objects.select_related(
+            "drug",
+            "consultation",
+            "consultation__billing",
+        ),
         pk=pk,
     )
 

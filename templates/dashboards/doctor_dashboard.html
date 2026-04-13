@@ -1,169 +1,85 @@
 {% extends "base.html" %}
+
 {% block title %}Doctor Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex flex-wrap justify-between gap-3 items-center">
-        <div>
-            <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
-            <p class="text-base-content/70">Consult patients, manage active workflow, and monitor billing impact.</p>
-        </div>
-        <a href="{% url 'doctor_consultation_start' %}" class="btn btn-primary">
-            Start Next Consultation
-        </a>
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
+        <p class="text-base-content/70">
+            Consultation performance, billing impact, admissions, and pending lab reviews.
+        </p>
     </div>
 
-    {% if is_overloaded %}
-        <div class="alert alert-warning shadow-sm">
-            <span>Too many patients are waiting. Please attend urgently.</span>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Total Patients Consulted</p>
+                <h2 class="text-3xl font-bold">{{ data.total_consulted }}</h2>
+            </div>
         </div>
-    {% endif %}
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Consultations Today</p>
+                <h2 class="text-3xl font-bold">{{ data.consultations_today }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Consultations This Month</p>
+                <h2 class="text-3xl font-bold">{{ data.consultations_month }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Average Consultations / Day</p>
+                <h2 class="text-3xl font-bold">{{ data.avg_per_day }}</h2>
+            </div>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Waiting Patients</h2>
-                <p class="text-3xl font-bold">{{ active_waiting_count }}</p>
+                <p class="text-sm text-base-content/70">Total Bills Generated</p>
+                <h2 class="text-2xl font-bold">₦{{ data.total_bills }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Completed Consultations</h2>
-                <p class="text-3xl font-bold">{{ completed_count }}</p>
+                <p class="text-sm text-base-content/70">Admissions</p>
+                <h2 class="text-2xl font-bold">{{ data.admissions_count }}</h2>
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm">
+        <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
-                <h2 class="card-title text-lg">Total Bill Generated</h2>
-                <p class="text-3xl font-bold">₦{{ total_bill_generated }}</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title">My Active Consultations</h2>
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Started</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for consultation in in_progress_consultations %}
-                                <tr>
-                                    <td>{{ consultation.patient.full_name }}</td>
-                                    <td>{{ consultation.consulted_at }}</td>
-                                    <td>
-                                        <a href="{% url 'consultation_detail' consultation.pk %}" class="btn btn-sm btn-outline">
-                                            Open
-                                        </a>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="3">No consultations in progress.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title">Current Admissions</h2>
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Ward/Bed</th>
-                                <th>Days</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for admission in active_admissions %}
-                                <tr>
-                                    <td>{{ admission.patient.full_name }}</td>
-                                    <td>{{ admission.ward|default:"-" }} {% if admission.bed_number %}/ {{ admission.bed_number }}{% endif %}</td>
-                                    <td>{{ admission.days_admitted }}</td>
-                                    <td>
-                                        <a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">Open</a>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="4">No active admissions.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <p class="text-sm text-warning">Pending Lab Reviews</p>
+                <h2 class="text-2xl font-bold text-warning">{{ data.pending_lab_reviews }}</h2>
             </div>
         </div>
     </div>
 
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
-            <h2 class="card-title">Lab Results Requiring Attention</h2>
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in doctor_lab_reviews %}
-                            <tr>
-                                <td>{{ request.patient.full_name }}</td>
-                                <td>{{ request.get_status_display }}</td>
-                                <td>
-                                    <a href="{% url 'consultation_detail' request.consultation.pk %}" class="btn btn-sm btn-outline">
-                                        Review
-                                    </a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="3">No lab items awaiting attention.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
-            <h2 class="card-title">Prescriptions Requiring Pharmacy Action</h2>
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Drug</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in pending_prescriptions %}
-                            <tr>
-                                <td>{{ item.patient.full_name }}</td>
-                                <td>{{ item.drug.name }}</td>
-                                <td>{{ item.get_status_display }}</td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="3">No pharmacy actions pending.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'doctor_consultation_start' %}" class="btn btn-primary">
+                    Start Consultation
+                </a>
+                <a href="{% url 'appointment_list' %}" class="btn btn-outline">
+                    View Appointments
+                </a>
+                <a href="{% url 'patient_list' %}" class="btn btn-outline">
+                    View Patients
+                </a>
+                <a href="{% url 'admission_list' %}" class="btn btn-outline">
+                    View Admissions
+                </a>
             </div>
         </div>
     </div>

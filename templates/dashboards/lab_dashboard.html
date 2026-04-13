@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Lab Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-bold">Lab Dashboard</h1>
+        <p class="text-base-content/70">Manage lab requests, upload results, and monitor laboratory activity.</p>
+    </div>
+
+    {% if low_stock_tests %}
+        <div class="alert alert-warning shadow-sm">
+            <span>Some lab tests are low in stock.</span>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Completed Today</h2>
+                <p class="text-3xl font-bold">{{ completed_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">All-Time Completed</h2>
+                <p class="text-3xl font-bold">{{ completed_all_time }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Available Lab Tests</h2>
+                <p class="text-3xl font-bold">{{ data.available_tests }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-info">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-info">Tests Completed Today</h2>
+                <p class="text-3xl font-bold text-info">{{ data.tests_today }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Tests Completed This Month</h2>
+                <p class="text-3xl font-bold">{{ data.tests_month }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">All-Time Accepted Tests</h2>
+                <p class="text-3xl font-bold">{{ data.tests_total }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-warning">Pending Tests</h2>
+                <p class="text-3xl font-bold text-warning">{{ data.pending_tests }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-warning">Rejected Tests</h2>
+                <p class="text-3xl font-bold text-warning">{{ data.rejected_tests }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-error">Unavailable Tests</h2>
+                <p class="text-3xl font-bold text-error">{{ data.unavailable_tests }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Active Requests</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Status</th>
+                            <th>Billing</th>
+                            <th>Updated</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request_item in active_requests %}
+                            <tr>
+                                <td>{{ request_item.patient.full_name }}</td>
+                                <td>{{ request_item.get_status_display }}</td>
+                                <td>
+                                    {% if request_item.consultation.billing %}
+                                        {{ request_item.consultation.billing.get_payment_status_display }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ request_item.updated_at }}</td>
+                                <td>
+                                    <a href="{% url 'lab_request_detail' request_item.pk %}" class="btn btn-sm btn-outline">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No active lab requests.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Lab Work Queue</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Test</th>
+                            <th>Status</th>
+                            <th>Requested By</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_items %}
+                            <tr>
+                                <td>{{ item.lab_request.patient.full_name }}</td>
+                                <td>{{ item.lab_test.name }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    {% if item.lab_request.consultation.doctor %}
+                                        {{ item.lab_request.consultation.doctor.get_full_name|default:item.lab_request.consultation.doctor.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'lab_result_update' item.pk %}" class="btn btn-sm btn-outline">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">No pending lab work.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'lab_test_list' %}" class="btn btn-outline">View Lab Tests</a>
+                <a href="{% url 'lab_test_create' %}" class="btn btn-primary">Create Lab Test</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

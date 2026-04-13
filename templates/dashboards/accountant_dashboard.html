@@ -1,76 +1,135 @@
 {% extends "base.html" %}
+
 {% block title %}Accountant Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-8">
     <div>
         <h1 class="text-3xl font-bold">Accountant Dashboard</h1>
-        <p class="text-base-content/70">Manage bills, payments, discounts, and outstanding balances.</p>
+        <p class="text-base-content/70">
+            Billing performance, payments, outstanding balances, archives, and payroll access.
+        </p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Total Generated Today</h2>
-                <p class="text-3xl font-bold">₦{{ total_generated_today }}</p>
+                <p class="text-sm text-base-content/70">Total Bills</p>
+                <h2 class="text-3xl font-bold">{{ data.total_bills_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Total Paid Today</h2>
-                <p class="text-3xl font-bold">₦{{ total_paid_today }}</p>
+                <p class="text-sm text-base-content/70">Active Bills</p>
+                <h2 class="text-3xl font-bold">{{ data.active_bills_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Bills Today</h2>
-                <p class="text-3xl font-bold">{{ bills_today_count }}</p>
+                <p class="text-sm text-base-content/70">Archived Bills</p>
+                <h2 class="text-3xl font-bold">{{ data.archived_bills_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">All-Time Processed</h2>
-                <p class="text-3xl font-bold">{{ all_time_processed }}</p>
+                <p class="text-sm text-base-content/70">Bills Created Today</p>
+                <h2 class="text-3xl font-bold">{{ data.bills_today }}</h2>
             </div>
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
-            <div class="flex justify-between items-center">
-                <h2 class="card-title">Recent Bills</h2>
-                <a href="{% url 'billing_list' %}" class="btn btn-primary btn-sm">Open Billing</a>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Total Billing Generated</p>
+                <h2 class="text-2xl font-bold">₦{{ data.total_billing_generated }}</h2>
             </div>
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Total</th>
-                            <th>Paid</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for bill in recent_bills %}
-                            <tr>
-                                <td>{{ bill.patient.full_name }}</td>
-                                <td>₦{{ bill.total_amount }}</td>
-                                <td>₦{{ bill.amount_paid }}</td>
-                                <td>{{ bill.get_payment_status_display }}</td>
-                                <td>
-                                    <a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">View</a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="5">No bills found.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Billing Generated Today</p>
+                <h2 class="text-2xl font-bold">₦{{ data.billing_generated_today }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-success">
+            <div class="card-body">
+                <p class="text-sm text-success">Total Payments Received</p>
+                <h2 class="text-2xl font-bold text-success">₦{{ data.total_payments_received }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-success">
+            <div class="card-body">
+                <p class="text-sm text-success">Payments Received Today</p>
+                <h2 class="text-2xl font-bold text-success">₦{{ data.payments_received_today }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <p class="text-sm text-error">Outstanding Balances</p>
+                <h2 class="text-2xl font-bold text-error">₦{{ data.outstanding_balances }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Unpaid Bills</p>
+                <h2 class="text-3xl font-bold">{{ data.unpaid_bills_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Part Paid Bills</p>
+                <h2 class="text-3xl font-bold">{{ data.part_paid_bills_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Paid Full Today</p>
+                <h2 class="text-3xl font-bold">{{ data.paid_full_today_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">This Month</h2>
+                <p><strong>Generated:</strong> ₦{{ data.monthly_generated }}</p>
+                <p><strong>Received:</strong> ₦{{ data.monthly_received }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Quick Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'billing_list' %}" class="btn btn-primary">
+                        View Billing
+                    </a>
+                    <a href="{% url 'archived_billing_list' %}" class="btn btn-outline">
+                        Archived Bills
+                    </a>
+                    <a href="{% url 'payroll_dashboard' %}" class="btn btn-outline">
+                        Payroll Dashboard
+                    </a>
+                    <a href="{% url 'salary_structure_list' %}" class="btn btn-outline">
+                        Salary Structures
+                    </a>
+                    <a href="{% url 'payroll_list' %}" class="btn btn-outline">
+                        Payroll Records
+                    </a>
+                </div>
             </div>
         </div>
     </div>

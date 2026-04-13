@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+            <p class="text-base-content/70">
+                System-wide staff, patient, workflow, operations, and finance overview.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'patient_list' %}" class="btn btn-outline btn-sm">Patients</a>
+            <a href="{% url 'billing_list' %}" class="btn btn-outline btn-sm">Billing</a>
+            <a href="{% url 'payroll_dashboard' %}" class="btn btn-outline btn-sm">Payroll</a>
+            <a href="{% url 'admin:index' %}" class="btn btn-primary btn-sm">Django Admin</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg">
+            <div class="card-body">
+                <p class="text-sm opacity-90">Verified Staff</p>
+                <h2 class="text-3xl font-bold">{{ data.total_staff }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg">
+            <div class="card-body">
+                <p class="text-sm opacity-90">Total Patients</p>
+                <h2 class="text-3xl font-bold">{{ data.total_patients }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+            <div class="card-body">
+                <p class="text-sm opacity-90">Consultations</p>
+                <h2 class="text-3xl font-bold">{{ data.total_consultations }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
+            <div class="card-body">
+                <p class="text-sm opacity-90">Revenue Received</p>
+                <h2 class="text-3xl font-bold">₦{{ data.total_revenue }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Pending Verification</p>
+                <h2 class="text-3xl font-bold text-warning">{{ data.pending_verification }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-info">
+            <div class="card-body">
+                <p class="text-sm text-info">Active Waiting Room</p>
+                <h2 class="text-3xl font-bold text-info">{{ data.active_waiting_room }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Admissions</p>
+                <h2 class="text-3xl font-bold">{{ data.total_admissions }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Patients Today</p>
+                <h2 class="text-3xl font-bold">{{ data.patients_today }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-lg xl:col-span-2">
+            <div class="card-body">
+                <h2 class="card-title">Yearly Activity Overview</h2>
+                <p class="text-sm text-base-content/70">
+                    Patients, consultations, and revenue for {{ data.current_year }}
+                </p>
+                <div class="mt-4 rounded-2xl bg-base-200 p-3">
+                    <canvas id="activityBarChart" class="w-full h-[280px] sm:h-[320px]"></canvas>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-3 text-sm">
+                    <span class="badge badge-outline">Patients</span>
+                    <span class="badge badge-outline">Consultations</span>
+                    <span class="badge badge-outline">Revenue</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <h2 class="card-title">Staff Distribution</h2>
+                <p class="text-sm text-base-content/70">
+                    Verified staff grouped by role
+                </p>
+                <div class="mt-4 rounded-2xl bg-base-200 p-3">
+                    <canvas id="staffPieChart" class="w-full h-[280px] sm:h-[320px]"></canvas>
+                </div>
+                <div class="mt-4 space-y-2 text-sm">
+                    <div class="flex justify-between"><span>Admins</span><span>{{ data.role_counts.admins }}</span></div>
+                    <div class="flex justify-between"><span>Doctors</span><span>{{ data.role_counts.doctors }}</span></div>
+                    <div class="flex justify-between"><span>Nurses</span><span>{{ data.role_counts.nurses }}</span></div>
+                    <div class="flex justify-between"><span>Accountants</span><span>{{ data.role_counts.accountants }}</span></div>
+                    <div class="flex justify-between"><span>Lab Technicians</span><span>{{ data.role_counts.lab_technicians }}</span></div>
+                    <div class="flex justify-between"><span>Pharmacists</span><span>{{ data.role_counts.pharmacists }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <h2 class="card-title">Workflow Distribution</h2>
+                <p class="text-sm text-base-content/70">
+                    Current operational workload snapshot
+                </p>
+                <div class="mt-4 rounded-2xl bg-base-200 p-3">
+                    <canvas id="workflowPieChart" class="w-full h-[280px] sm:h-[320px]"></canvas>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Waiting Room</span><span>{{ data.workflow_distribution.waiting_room }}</span></div>
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Consultations</span><span>{{ data.workflow_distribution.consultations }}</span></div>
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Admissions</span><span>{{ data.workflow_distribution.admissions }}</span></div>
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Pending Lab</span><span>{{ data.workflow_distribution.pending_lab }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <h2 class="card-title">Billing Status Distribution</h2>
+                <p class="text-sm text-base-content/70">
+                    Unpaid, part-paid, and fully paid active bills
+                </p>
+                <div class="mt-4 rounded-2xl bg-base-200 p-3">
+                    <canvas id="billingPieChart" class="w-full h-[280px] sm:h-[320px]"></canvas>
+                </div>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Unpaid</span><span>{{ data.billing_distribution.unpaid }}</span></div>
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Part Paid</span><span>{{ data.billing_distribution.part_paid }}</span></div>
+                    <div class="rounded-lg bg-base-100 p-2 flex justify-between"><span>Paid Full</span><span>{{ data.billing_distribution.paid_full }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <p class="text-sm text-error">Unpaid Bills</p>
+                <h2 class="text-3xl font-bold text-error">{{ data.unpaid_bills_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Part-Paid Bills</p>
+                <h2 class="text-3xl font-bold text-warning">{{ data.part_paid_bills_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Pending Lab Work</p>
+                <h2 class="text-3xl font-bold text-warning">{{ data.pending_lab_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Low Stock Drugs</p>
+                <h2 class="text-3xl font-bold text-warning">{{ data.low_stock_drug_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Staff by Role</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Admins</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.admins }}</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Doctors</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.doctors }}</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Nurses</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.nurses }}</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Accountants</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.accountants }}</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Lab Technicians</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.lab_technicians }}</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 p-4">
+                        <p class="text-sm text-base-content/70">Pharmacists</p>
+                        <p class="text-2xl font-bold">{{ data.role_counts.pharmacists }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Quick Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'patient_list' %}" class="btn btn-outline btn-sm">View Patients</a>
+                    <a href="{% url 'waiting_room_list' %}" class="btn btn-outline btn-sm">Waiting Room</a>
+                    <a href="{% url 'appointment_list' %}" class="btn btn-outline btn-sm">Appointments</a>
+                    <a href="{% url 'billing_list' %}" class="btn btn-outline btn-sm">Billing</a>
+                    <a href="{% url 'archived_billing_list' %}" class="btn btn-outline btn-sm">Archived Bills</a>
+                    <a href="{% url 'payroll_dashboard' %}" class="btn btn-outline btn-sm">Payroll Dashboard</a>
+                    <a href="{% url 'salary_structure_list' %}" class="btn btn-outline btn-sm">Salary Structures</a>
+                    <a href="{% url 'lab_dashboard' %}" class="btn btn-outline btn-sm">Lab Dashboard</a>
+                    <a href="{% url 'pharmacy_dashboard' %}" class="btn btn-outline btn-sm">Pharmacy Dashboard</a>
+                    <a href="{% url 'admin:index' %}" class="btn btn-primary btn-sm">Django Admin</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ data.monthly_labels|json_script:"monthly-labels-data" }}
+{{ data.monthly_patient_counts|json_script:"monthly-patients-data" }}
+{{ data.monthly_consultation_counts|json_script:"monthly-consultations-data" }}
+{{ data.monthly_revenue_received|json_script:"monthly-revenue-data" }}
+{{ data.role_counts|json_script:"role-counts-data" }}
+{{ data.workflow_distribution|json_script:"workflow-distribution-data" }}
+{{ data.billing_distribution|json_script:"billing-distribution-data" }}
+
+<script src="{% static 'js/admin_dashboard.js' %}"></script>
+{% endblock %}

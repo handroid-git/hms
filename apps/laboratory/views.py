@@ -2,7 +2,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+
 from apps.accounts.models import Role
+from apps.dashboards.services import lab_dashboard_data
+
 from .forms import LabResultUpdateForm, LabTestForm
 from .models import LabRequest, LabRequestItem, LabTest
 from .services import (
@@ -23,7 +26,25 @@ def lab_dashboard(request):
             LabRequest.Status.IN_PROGRESS,
             LabRequest.Status.REJECTED,
         ]
-    ).select_related("patient", "consultation", "consultation__billing").order_by("-updated_at")
+    ).select_related(
+        "patient",
+        "consultation",
+        "consultation__billing",
+    ).order_by("-updated_at")
+
+    pending_items = LabRequestItem.objects.filter(
+        status__in=[
+            LabRequestItem.Status.PENDING,
+            LabRequestItem.Status.IN_PROGRESS,
+            LabRequestItem.Status.REJECTED,
+        ]
+    ).select_related(
+        "lab_request",
+        "lab_request__patient",
+        "lab_request__consultation",
+        "lab_request__consultation__doctor",
+        "lab_test",
+    ).order_by("-updated_at")
 
     available_tests = LabTest.objects.order_by("name")
     low_stock_tests = [test for test in available_tests if test.is_low_stock]
@@ -42,10 +63,12 @@ def lab_dashboard(request):
 
     context = {
         "active_requests": active_requests,
+        "pending_items": pending_items,
         "available_tests": available_tests[:10],
         "low_stock_tests": low_stock_tests,
         "completed_today": completed_today,
         "completed_all_time": completed_all_time,
+        "data": lab_dashboard_data(request.user),
     }
     return render(request, "laboratory/lab_dashboard.html", context)
 
@@ -56,7 +79,12 @@ def lab_request_detail(request, pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     lab_request = get_object_or_404(
-        LabRequest.objects.select_related("patient", "consultation", "requested_by", "consultation__billing"),
+        LabRequest.objects.select_related(
+            "patient",
+            "consultation",
+            "requested_by",
+            "consultation__billing",
+        ),
         pk=pk,
     )
     items = lab_request.items.select_related("lab_test").prefetch_related("attachments").all()
@@ -77,7 +105,12 @@ def lab_result_update(request, item_pk):
         return render(request, "dashboards/access_denied.html", status=403)
 
     item = get_object_or_404(
-        LabRequestItem.objects.select_related("lab_request", "lab_test", "lab_request__consultation", "lab_request__consultation__billing").prefetch_related("attachments"),
+        LabRequestItem.objects.select_related(
+            "lab_request",
+            "lab_test",
+            "lab_request__consultation",
+            "lab_request__consultation__billing",
+        ).prefetch_related("attachments"),
         pk=item_pk,
     )
 

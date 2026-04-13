@@ -5,7 +5,7 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-3xl font-bold">Pharmacy Dashboard</h1>
-        <p class="text-base-content/70">Manage prescriptions, issue drugs, and monitor stock.</p>
+        <p class="text-base-content/70">Manage prescriptions, issue drugs, monitor stock, and view pharmacy analytics.</p>
     </div>
 
     {% if low_stock_drugs %}
@@ -20,7 +20,7 @@
         </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Drugs Issued Today</h2>
@@ -32,6 +32,34 @@
             <div class="card-body">
                 <h2 class="card-title text-lg">All-Time Drug Issues</h2>
                 <p class="text-3xl font-bold">{{ issued_all_time }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Total Drugs</h2>
+                <p class="text-3xl font-bold">{{ data.total_drugs }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Available Drugs</h2>
+                <p class="text-3xl font-bold">{{ data.available_drugs }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-warning">Low Stock</h2>
+                <p class="text-3xl font-bold text-warning">{{ data.low_stock }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-error">Out of Stock</h2>
+                <p class="text-3xl font-bold text-error">{{ data.out_of_stock }}</p>
             </div>
         </div>
     </div>
@@ -64,6 +92,16 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'drug_list' %}" class="btn btn-outline">View Drugs</a>
+                <a href="{% url 'drug_create' %}" class="btn btn-primary">Create Drug</a>
             </div>
         </div>
     </div>

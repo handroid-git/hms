@@ -10,7 +10,11 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env("SECRET_KEY", default="unsafe-dev-key")
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "10.15.228.31",
+]
 
 INSTALLED_APPS = [
     "daphne",

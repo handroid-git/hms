@@ -1,38 +1,72 @@
 {% extends "base.html" %}
+
 {% block title %}Nurse Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-8">
     <div>
         <h1 class="text-3xl font-bold">Nurse Dashboard</h1>
-        <p class="text-base-content/70">Manage patients, waiting room flow, and inpatient care.</p>
+        <p class="text-base-content/70">
+            Patient registration, triage activity, waiting room visibility, discharge actions, and shift overview.
+        </p>
     </div>
 
-    {% if is_overloaded %}
-        <div class="alert alert-warning shadow-sm">
-            <span>Too many patients are waiting. Please attend urgently.</span>
-        </div>
-    {% endif %}
-
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Patients Created</h2>
-                <p class="text-3xl font-bold">{{ patients_created_count }}</p>
+                <p class="text-sm text-base-content/70">Total Patients Created</p>
+                <h2 class="text-3xl font-bold">{{ data.total_patients_created }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Waiting Patients</h2>
-                <p class="text-3xl font-bold">{{ active_waiting_count }}</p>
+                <p class="text-sm text-base-content/70">Patients Created Today</p>
+                <h2 class="text-3xl font-bold">{{ data.patients_created_today }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title text-lg">Active Admissions</h2>
-                <p class="text-3xl font-bold">{{ admitted_patients|length }}</p>
+                <p class="text-sm text-base-content/70">Patients Created This Month</p>
+                <h2 class="text-3xl font-bold">{{ data.patients_created_month }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Total Triage Entries</p>
+                <h2 class="text-3xl font-bold">{{ data.total_triaged }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Triaged Today</p>
+                <h2 class="text-3xl font-bold">{{ data.triaged_today }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Active Waiting Room</p>
+                <h2 class="text-3xl font-bold text-warning">{{ data.active_waiting_room_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">My Active Waiting Entries</p>
+                <h2 class="text-3xl font-bold">{{ data.my_active_waiting_room_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <p class="text-sm text-error">Discharge Confirmations Pending</p>
+                <h2 class="text-3xl font-bold text-error">{{ data.discharge_pending_count }}</h2>
             </div>
         </div>
     </div>
@@ -40,59 +74,71 @@
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Recent Waiting Room Entries</h2>
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Priority</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in recent_waiting_entries %}
-                                <tr>
-                                    <td>{{ entry.patient.full_name }}</td>
-                                    <td>{{ entry.get_priority_display }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="2">No waiting patients.</td></tr>
+                <h2 class="card-title">Shift Overview</h2>
+
+                <p>
+                    <strong>Shift Start:</strong>
+                    {% if data.shift_start %}
+                        {{ data.shift_start }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>Shift End:</strong>
+                    {% if data.shift_end %}
+                        {{ data.shift_end }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
+
+                <div>
+                    <p class="font-semibold mb-2">Shift Days</p>
+                    {% if data.shift_days %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for day in data.shift_days %}
+                                <span class="badge badge-outline">{{ day }}</span>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                        </div>
+                    {% else %}
+                        <p class="text-base-content/70">No shift days set.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Admitted Patients</h2>
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Ward/Bed</th>
-                                <th>Days</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for admission in admitted_patients %}
-                                <tr>
-                                    <td>{{ admission.patient.full_name }}</td>
-                                    <td>{{ admission.ward|default:"-" }} {% if admission.bed_number %}/ {{ admission.bed_number }}{% endif %}</td>
-                                    <td>{{ admission.days_admitted }}</td>
-                                    <td>
-                                        <a href="{% url 'admission_detail' admission.pk %}" class="btn btn-sm btn-outline">Open</a>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="4">No admitted patients.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <h2 class="card-title">Billing Awareness</h2>
+                <p class="text-sm text-base-content/70">
+                    Outstanding balances that may affect waiting-room decisions and follow-up workflow.
+                </p>
+                <h3 class="text-3xl font-bold mt-2">₦{{ data.outstanding_patient_balances }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Quick Actions</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'patient_create' %}" class="btn btn-primary">
+                    Create Patient
+                </a>
+                <a href="{% url 'waiting_room_add' %}" class="btn btn-outline">
+                    Add to Waiting Room
+                </a>
+                <a href="{% url 'waiting_room_list' %}" class="btn btn-outline">
+                    View Waiting Room
+                </a>
+                <a href="{% url 'appointment_list' %}" class="btn btn-outline">
+                    View Appointments
+                </a>
+                <a href="{% url 'patient_list' %}" class="btn btn-outline">
+                    View Patients
+                </a>
             </div>
         </div>
     </div>
