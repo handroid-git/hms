@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const themeToggle = document.getElementById("theme-toggle");
     const appConfig = document.getElementById("app-config");
 
+    const notificationBellLink = document.getElementById("notification-bell-link");
     const notificationBell = document.getElementById("notification-bell");
     const notificationBadge = document.getElementById("notification-badge");
     const sidebarNotificationBadge = document.getElementById("sidebar-notification-badge");
@@ -41,6 +42,23 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastUnreadChatCount = parseInt(appConfig.dataset.unreadChatCount || "0", 10);
 
     function updateNotificationUI(unreadCount) {
+        if (notificationBellLink) {
+            if (unreadCount > 0) {
+                notificationBellLink.classList.remove("hidden");
+                notificationBellLink.classList.add(
+                    "btn",
+                    "btn-sm",
+                    "btn-outline",
+                    "text-white",
+                    "border-white",
+                    "hover:bg-blue-700",
+                    "relative"
+                );
+            } else {
+                notificationBellLink.classList.add("hidden");
+            }
+        }
+
         if (notificationBadge) {
             if (unreadCount > 0) {
                 notificationBadge.textContent = unreadCount;
@@ -168,6 +186,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     updateDashboardGreeting();
+    updateNotificationUI(lastUnreadNotificationCount);
+    updateChatUI(lastUnreadChatCount);
 
     if (isAuthenticated) {
         setInterval(pollNotifications, 5000);

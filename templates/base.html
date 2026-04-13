@@ -36,8 +36,8 @@
 
         .floating-chat-link {
             position: fixed;
-            right: 1.25rem;
-            bottom: 5.5rem;
+            right: 1rem;
+            bottom: 5rem;
             z-index: 40;
             background: transparent;
             pointer-events: none;
@@ -64,7 +64,7 @@
         }
     </style>
 </head>
-<body class="bg-base-200 min-h-screen flex flex-col">
+<body class="bg-base-200 min-h-screen">
 
 <div
     id="app-config"
@@ -78,65 +78,59 @@
     data-dashboard-welcome-until="{{ dashboard_welcome_until }}"
 ></div>
 
-<div class="drawer lg:drawer-open flex-1">
+<div class="navbar fixed top-0 left-0 right-0 z-[100] bg-blue-800 text-white border-b border-blue-900 shadow-sm">
+    <div class="flex-none lg:hidden">
+        <label for="sidebar-drawer" class="btn btn-square btn-ghost text-white">☰</label>
+    </div>
+
+    <div class="flex-1 min-w-0 px-2">
+        <a href="{% url 'home' %}" class="text-xl font-bold hover:opacity-90 truncate">
+            HMS
+        </a>
+    </div>
+
+    <div class="flex-none flex items-center gap-2">
+        {% if request.user.is_authenticated %}
+            <a href="{% url 'notification_list' %}"
+               id="notification-bell-link"
+               class="{% if unread_notifications_count > 0 %}btn btn-sm btn-outline text-white border-white hover:bg-blue-700 relative{% else %}hidden{% endif %}">
+                <span id="notification-bell" class="inline-block text-lg">🔔</span>
+                {% if unread_notifications_count > 0 %}
+                    <span id="notification-badge"
+                          class="absolute -top-2 -right-2 badge badge-warning text-black font-bold animate-pulse">
+                        {{ unread_notifications_count }}
+                    </span>
+                {% else %}
+                    <span id="notification-badge"
+                          class="absolute -top-2 -right-2 badge badge-warning text-black font-bold hidden">
+                        0
+                    </span>
+                {% endif %}
+            </a>
+
+            <a href="{% url 'dashboard_redirect' %}" class="btn btn-ghost btn-sm text-white px-2 sm:px-3">
+                Dashboard
+            </a>
+
+            <form method="post" action="{% url 'logout' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-error btn-sm text-white px-2 sm:px-3">
+                    Logout
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="drawer lg:drawer-open min-h-screen">
     <input id="sidebar-drawer" type="checkbox" class="drawer-toggle" />
 
-    <div class="drawer-content flex flex-col">
-        <div class="navbar bg-blue-800 text-white border-b border-blue-900">
-            <div class="flex-none lg:hidden">
-                <label for="sidebar-drawer" class="btn btn-square btn-ghost text-white">☰</label>
-            </div>
-
-            <div class="flex-1 px-2">
-                <a href="{% url 'home' %}" class="text-xl font-bold hover:opacity-90">
-                    HMS
-                </a>
-            </div>
-
-            <div class="flex-none gap-2">
-                <button id="theme-toggle" type="button" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
-                    Toggle Theme
-                </button>
-
-                {% if request.user.is_authenticated %}
-                    <a href="{% url 'app_settings' %}" class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700">
-                        ⚙️
-                    </a>
-
-                    <a href="{% url 'notification_list' %}"
-                       id="notification-bell-link"
-                       class="btn btn-sm btn-outline text-white border-white hover:bg-blue-700 relative">
-                        <span id="notification-bell" class="inline-block text-lg">🔔</span>
-                        {% if unread_notifications_count > 0 %}
-                            <span id="notification-badge"
-                                  class="absolute -top-2 -right-2 badge badge-warning text-black font-bold animate-pulse">
-                                {{ unread_notifications_count }}
-                            </span>
-                        {% else %}
-                            <span id="notification-badge"
-                                  class="absolute -top-2 -right-2 badge badge-warning text-black font-bold hidden">
-                                0
-                            </span>
-                        {% endif %}
-                    </a>
-
-                    <a href="{% url 'dashboard_redirect' %}" class="btn btn-ghost btn-sm text-white">
-                        Dashboard
-                    </a>
-
-                    <form method="post" action="{% url 'logout' %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-error btn-sm text-white">Logout</button>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
-
-        <main class="p-6 flex-1">
+    <div class="drawer-content flex flex-col min-w-0">
+        <main class="flex-1 min-w-0 p-4 sm:p-6 pt-24">
             {% if request.user.is_authenticated and is_dashboard_page %}
                 <div class="flex justify-end mb-4">
                     <div id="dashboard-greeting"
-                         class="text-sm md:text-base font-semibold text-base-content/80">
+                         class="text-sm md:text-base font-semibold text-base-content/80 text-right">
                         {{ dashboard_identity_label }}
                     </div>
                 </div>
@@ -146,17 +140,17 @@
             {% block content %}{% endblock %}
         </main>
 
-        <footer class="bg-blue-800 text-white py-4 px-6 border-t border-blue-900">
+        <footer class="bg-blue-800 text-white py-4 px-4 sm:px-6 border-t border-blue-900">
             <div class="flex flex-col md:flex-row justify-between items-center gap-2">
                 <p class="font-semibold">Hospital Management System</p>
-                <p class="text-sm opacity-90">© 2026 HMS. Professional hospital workflow system.</p>
+                <p class="text-sm opacity-90">© 2026 HMS. Powered and designed by Handroid Concepts(HC).</p>
             </div>
         </footer>
     </div>
 
-    <div class="drawer-side">
+    <div class="drawer-side z-[110]">
         <label for="sidebar-drawer" class="drawer-overlay"></label>
-        <aside class="min-h-full w-72 bg-base-100 border-r border-base-300">
+        <aside class="min-h-full w-72 bg-base-100 border-r border-base-300 pt-20 lg:pt-0">
             <div class="p-5 border-b border-base-300">
                 <a href="{% url 'home' %}" class="text-2xl font-bold hover:text-blue-700">HMS</a>
                 <p class="text-sm text-base-content/70">Professional hospital workflow system</p>
@@ -164,6 +158,19 @@
 
             <ul class="menu p-4 gap-1">
                 <li><a href="{% url 'dashboard_redirect' %}">Dashboard</a></li>
+
+                <li>
+                    <button id="theme-toggle" type="button" class="btn btn-outline w-full justify-start">
+                        Toggle Theme
+                    </button>
+                </li>
+
+                <li>
+                    <a href="{% url 'app_settings' %}" class="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <span>Settings</span>
+                    </a>
+                </li>
 
                 <li>
                     <a href="{% url 'notification_list' %}" class="flex items-center justify-between">
@@ -189,44 +196,47 @@
                     </a>
                 </li>
 
-                <li>
-                    <a href="{% url 'app_settings' %}" class="flex items-center gap-2">
-                        <span>⚙️</span>
-                        <span>Settings</span>
-                    </a>
-                </li>
-
-                {% if request.user.role == "NURSE" or request.user.role == "DOCTOR" or request.user.is_superuser %}
+                {% if request.user.role == "NURSE" or request.user.role == "DOCTOR" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'patient_list' %}">Patients</a></li>
                     <li><a href="{% url 'admission_list' %}">Admissions</a></li>
                     <li><a href="{% url 'appointment_list' %}">Appointments</a></li>
                 {% endif %}
 
-                {% if request.user.role == "NURSE" or request.user.is_superuser %}
+                {% if request.user.role == "NURSE" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'patient_create' %}">Create Patient</a></li>
                     <li><a href="{% url 'waiting_room_list' %}">Waiting Room</a></li>
                     <li><a href="{% url 'waiting_room_add' %}">Add to Waiting Room</a></li>
                     <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
                 {% endif %}
 
-                {% if request.user.role == "LAB_TECHNICIAN" or request.user.is_superuser %}
+                {% if request.user.role == "DOCTOR" or request.user.role == "ADMIN" or request.user.is_superuser %}
+                    <li><a href="{% url 'doctor_dashboard' %}">Doctor Dashboard</a></li>
+                    <li><a href="{% url 'doctor_consultation_start' %}">Start Consultation</a></li>
+                    <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
+                {% endif %}
+
+                {% if request.user.role == "LAB_TECHNICIAN" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'lab_dashboard' %}">Lab Dashboard</a></li>
                     <li><a href="{% url 'lab_test_list' %}">Lab Tests</a></li>
                     <li><a href="{% url 'lab_test_create' %}">Create Lab Test</a></li>
                 {% endif %}
 
-                {% if request.user.role == "PHARMACIST" or request.user.is_superuser %}
+                {% if request.user.role == "PHARMACIST" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'pharmacy_dashboard' %}">Pharmacy Dashboard</a></li>
                     <li><a href="{% url 'drug_list' %}">Drugs</a></li>
                     <li><a href="{% url 'drug_create' %}">Create Drug</a></li>
                 {% endif %}
 
-                {% if request.user.role == "ACCOUNTANT" or request.user.is_superuser %}
+                {% if request.user.role == "ACCOUNTANT" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'accountant_dashboard' %}">Accountant Dashboard</a></li>
                     <li><a href="{% url 'billing_list' %}">Billing</a></li>
                     <li><a href="{% url 'archived_billing_list' %}">Archived Bills</a></li>
                     <li><a href="{% url 'payroll_dashboard' %}">Payroll Dashboard</a></li>
                     <li><a href="{% url 'salary_structure_list' %}">Salary Structures</a></li>
+                {% endif %}
+
+                {% if request.user.role == "ADMIN" or request.user.is_superuser %}
+                    <li><a href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
                 {% endif %}
 
                 {% if request.user.is_authenticated %}
