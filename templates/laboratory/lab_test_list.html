@@ -2,10 +2,36 @@
 {% block title %}Lab Tests{% endblock %}
 
 {% block content %}
-<div class="space-y-4">
-    <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold">Lab Tests</h1>
-        <a href="{% url 'lab_test_create' %}" class="btn btn-primary">Create Lab Test</a>
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Lab Tests</h1>
+            <p class="text-base-content/70">Search, filter, and manage laboratory inventory.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'lab_test_create' %}" class="btn btn-primary">Create Lab Test</a>
+            <a href="{% url 'lab_test_restock_create' %}" class="btn btn-outline">Restock</a>
+            <a href="{% url 'lab_test_stock_adjustment_create' %}" class="btn btn-outline">Adjust Stock</a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for field in filter_form %}
+                    <div>
+                        <label class="label">
+                            <span class="label-text">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                    </div>
+                {% endfor %}
+                <div class="md:col-span-3 flex gap-2">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'lab_test_list' %}" class="btn btn-outline">Clear</a>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="card bg-base-100 shadow-sm">
@@ -15,8 +41,10 @@
                     <tr>
                         <th>Name</th>
                         <th>Price</th>
-                        <th>Available</th>
                         <th>Stock</th>
+                        <th>Low Threshold</th>
+                        <th>Available</th>
+                        <th>Status</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -25,14 +53,16 @@
                         <tr>
                             <td>{{ test.name }}</td>
                             <td>₦{{ test.price }}</td>
-                            <td>{{ test.is_available|yesno:"Yes,No" }}</td>
                             <td>{{ test.stock_quantity }}</td>
+                            <td>{{ test.low_stock_threshold }}</td>
+                            <td>{{ test.is_available|yesno:"Yes,No" }}</td>
+                            <td>{{ test.stock_status_label }}</td>
                             <td>
                                 <a href="{% url 'lab_test_update' test.pk %}" class="btn btn-sm btn-outline">Edit</a>
                             </td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5">No lab tests found.</td></tr>
+                        <tr><td colspan="7">No lab tests found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

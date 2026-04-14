@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Drug Stock Movements{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Drug Stock Movements</h1>
+            <p class="text-base-content/70">
+                Track all stock changes such as restocks, issued drugs, and manual adjustments.
+            </p>
+        </div>
+
+        <div class="flex gap-2">
+            <a href="{% url 'drug_restock_create' %}" class="btn btn-primary btn-sm">
+                Restock
+            </a>
+            <a href="{% url 'drug_stock_adjustment_create' %}" class="btn btn-outline btn-sm">
+                Adjust Stock
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Drug</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Previous</th>
+                        <th>New</th>
+                        <th>Reason</th>
+                        <th>By</th>
+                        <th>When</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in movements %}
+                        <tr>
+                            <td>{{ movement.drug.name }}</td>
+                            <td>{{ movement.get_movement_type_display }}</td>
+                            <td>{{ movement.quantity }}</td>
+                            <td>{{ movement.previous_stock }}</td>
+                            <td>{{ movement.new_stock }}</td>
+                            <td>{{ movement.reason|default:"-" }}</td>
+                            <td>
+                                {% if movement.performed_by %}
+                                    {{ movement.performed_by.get_full_name|default:movement.performed_by.username }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ movement.created_at }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8">No stock movements recorded yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

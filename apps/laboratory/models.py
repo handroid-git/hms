@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 
@@ -19,6 +20,14 @@ class LabTest(models.Model):
     @property
     def is_low_stock(self):
         return self.stock_quantity <= self.low_stock_threshold
+
+    @property
+    def stock_status_label(self):
+        if self.stock_quantity == 0:
+            return "Out of Stock"
+        if self.is_low_stock:
+            return "Low Stock"
+        return "In Stock"
 
     def __str__(self):
         return self.name
@@ -145,3 +154,78 @@ class LabResultAttachment(models.Model):
 
     def __str__(self):
         return self.file.name
+
+
+class LabTestRestock(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lab_test = models.ForeignKey(
+        LabTest,
+        on_delete=models.CASCADE,
+        related_name="restocks",
+    )
+    quantity_added = models.PositiveIntegerField()
+    supplier_name = models.CharField(max_length=255, blank=True)
+    batch_number = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    restocked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lab_test_restocks_created",
+    )
+    restocked_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Restock - {self.lab_test.name} (+{self.quantity_added})"
+
+
+class LabStockMovement(models.Model):
+    class MovementType(models.TextChoices):
+        RESTOCK = "RESTOCK", "Restock"
+        CONSUMPTION = "CONSUMPTION", "Consumption"
+        ADJUSTMENT = "ADJUSTMENT", "Adjustment"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lab_test = models.ForeignKey(
+        LabTest,
+        on_delete=models.CASCADE,
+        related_name="stock_movements",
+    )
+    movement_type = models.CharField(
+        max_length=20,
+        choices=MovementType.choices,
+    )
+    quantity = models.IntegerField()
+    previous_stock = models.PositiveIntegerField(default=0)
+    new_stock = models.PositiveIntegerField(default=0)
+    reason = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lab_stock_movements",
+    )
+    lab_request_item = models.ForeignKey(
+        LabRequestItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="stock_movements",
+    )
+    restock_record = models.ForeignKey(
+        LabTestRestock,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="stock_movements",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.lab_test.name} - {self.get_movement_type_display()} ({self.quantity})"

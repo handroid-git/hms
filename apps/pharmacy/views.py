@@ -1,14 +1,24 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.models import Role
-from apps.dashboards.services import pharmacy_dashboard_data
+from apps.dashboards.services import pharmacy_dashboard_data, pharmacy_dashboard_workflow_context
 
-from .forms import DrugForm, DrugIssueForm, PrescriptionItemUpdateForm
-from .models import Drug, PrescriptionItem
-from .services import issue_drug, prescription_is_paid
+from .forms import (
+    DrugForm,
+    DrugInventoryFilterForm,
+    DrugIssueForm,
+    DrugRestockForm,
+    DrugStockAdjustmentForm,
+    PrescriptionItemUpdateForm,
+)
+from .models import Drug, DrugStockMovement, PrescriptionItem
+from .services import adjust_drug_stock, issue_drug, prescription_is_paid, restock_drug
 
 
 @login_required
@@ -16,39 +26,11 @@ def pharmacy_dashboard(request):
     if request.user.role != Role.PHARMACIST:
         return render(request, "dashboards/access_denied.html", status=403)
 
-    pending_items = PrescriptionItem.objects.filter(
-        status__in=[
-            PrescriptionItem.Status.AWAITING_PAYMENT,
-            PrescriptionItem.Status.READY_TO_ISSUE,
-            PrescriptionItem.Status.UNAVAILABLE,
-        ]
-    ).select_related("patient", "drug", "consultation").order_by("-updated_at")
-
-    available_drugs = Drug.objects.order_by("name")
-    low_stock_drugs = [drug for drug in available_drugs if drug.is_low_stock]
-    expired_drugs = [drug for drug in available_drugs if drug.is_expired]
-
-    today = timezone.localdate()
-    issued_today = PrescriptionItem.objects.filter(
-        status=PrescriptionItem.Status.ISSUED,
-        issue_record__issued_by=request.user,
-        issue_record__issued_at__date=today,
-    ).count()
-
-    issued_all_time = PrescriptionItem.objects.filter(
-        status=PrescriptionItem.Status.ISSUED,
-        issue_record__issued_by=request.user,
-    ).count()
-
     context = {
-        "pending_items": pending_items,
-        "low_stock_drugs": low_stock_drugs,
-        "expired_drugs": expired_drugs,
-        "issued_today": issued_today,
-        "issued_all_time": issued_all_time,
         "data": pharmacy_dashboard_data(request.user),
+        **pharmacy_dashboard_workflow_context(request.user),
     }
-    return render(request, "pharmacy/pharmacy_dashboard.html", context)
+    return render(request, "dashboards/pharmacy_dashboard.html", context)
 
 
 @login_required
@@ -56,8 +38,41 @@ def drug_list(request):
     if request.user.role != Role.PHARMACIST:
         return render(request, "dashboards/access_denied.html", status=403)
 
+    form = DrugInventoryFilterForm(request.GET or None)
     drugs = Drug.objects.order_by("name")
-    return render(request, "pharmacy/drug_list.html", {"drugs": drugs})
+
+    if form.is_valid():
+        q = form.cleaned_data.get("q")
+        stock_status = form.cleaned_data.get("stock_status")
+        availability = form.cleaned_data.get("availability")
+
+        if q:
+            drugs = drugs.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+        if availability == "available":
+            drugs = drugs.filter(is_available=True)
+        elif availability == "unavailable":
+            drugs = drugs.filter(is_available=False)
+
+        if stock_status == "out_of_stock":
+            drugs = drugs.filter(stock_quantity=0)
+        elif stock_status == "low_stock":
+            drugs = [drug for drug in drugs if drug.is_low_stock and drug.stock_quantity > 0 and not drug.is_expired]
+        elif stock_status == "expired":
+            drugs = [drug for drug in drugs if drug.is_expired]
+        elif stock_status == "near_expiry":
+            drugs = [drug for drug in drugs if drug.is_near_expiry]
+        elif stock_status == "in_stock":
+            drugs = [drug for drug in drugs if drug.stock_quantity > 0 and not drug.is_low_stock and not drug.is_expired]
+
+    return render(
+        request,
+        "pharmacy/drug_list.html",
+        {
+            "drugs": drugs,
+            "filter_form": form,
+        },
+    )
 
 
 @login_required
@@ -175,3 +190,115 @@ def prescription_issue_view(request, pk):
             return redirect("prescription_item_detail", pk=item.pk)
 
     return redirect("prescription_item_detail", pk=item.pk)
+
+
+@login_required
+def drug_restock_create(request):
+    if request.user.role != Role.PHARMACIST:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    if request.method == "POST":
+        form = DrugRestockForm(request.POST)
+        if form.is_valid():
+            try:
+                restock_drug(
+                    drug=form.cleaned_data["drug"],
+                    quantity_added=form.cleaned_data["quantity_added"],
+                    pharmacist=request.user,
+                    unit_cost=form.cleaned_data.get("unit_cost") or Decimal("0.00"),
+                    supplier_name=form.cleaned_data.get("supplier_name", ""),
+                    batch_number=form.cleaned_data.get("batch_number", ""),
+                    expiration_date=form.cleaned_data.get("expiration_date"),
+                    notes=form.cleaned_data.get("notes", ""),
+                )
+                messages.success(request, "Drug restocked successfully.")
+                return redirect("drug_stock_movement_list")
+            except ValueError as exc:
+                messages.error(request, str(exc))
+    else:
+        form = DrugRestockForm()
+
+    return render(
+        request,
+        "pharmacy/drug_restock_form.html",
+        {
+            "form": form,
+            "title": "Restock Drug",
+        },
+    )
+
+
+@login_required
+def drug_stock_adjustment_create(request):
+    if request.user.role != Role.PHARMACIST:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    if request.method == "POST":
+        form = DrugStockAdjustmentForm(request.POST)
+        if form.is_valid():
+            try:
+                adjust_drug_stock(
+                    drug=form.cleaned_data["drug"],
+                    quantity_change=form.cleaned_data["quantity_change"],
+                    pharmacist=request.user,
+                    reason=form.cleaned_data["reason"],
+                    notes=form.cleaned_data.get("notes", ""),
+                )
+                messages.success(request, "Drug stock adjusted successfully.")
+                return redirect("drug_stock_movement_list")
+            except ValueError as exc:
+                messages.error(request, str(exc))
+    else:
+        form = DrugStockAdjustmentForm()
+
+    return render(
+        request,
+        "pharmacy/drug_stock_adjustment_form.html",
+        {
+            "form": form,
+            "title": "Adjust Drug Stock",
+        },
+    )
+
+
+@login_required
+def drug_stock_movement_list(request):
+    if request.user.role != Role.PHARMACIST:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    movements = DrugStockMovement.objects.select_related(
+        "drug",
+        "performed_by",
+        "prescription_item",
+        "restock_record",
+    )
+    return render(
+        request,
+        "pharmacy/drug_stock_movement_list.html",
+        {
+            "movements": movements,
+        },
+    )
+
+
+@login_required
+def drug_expiry_management(request):
+    if request.user.role != Role.PHARMACIST:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    today = timezone.localdate()
+    drugs = Drug.objects.order_by("expiration_date", "name")
+    expired_drugs = [drug for drug in drugs if drug.is_expired]
+    near_expiry_drugs = [drug for drug in drugs if drug.is_near_expiry]
+    no_expiry_drugs = [drug for drug in drugs if not drug.expiration_date]
+
+    return render(
+        request,
+        "pharmacy/drug_expiry_management.html",
+        {
+            "today": today,
+            "expired_drugs": expired_drugs,
+            "near_expiry_drugs": near_expiry_drugs,
+            "no_expiry_drugs": no_expiry_drugs,
+        },
+    )

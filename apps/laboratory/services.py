@@ -1,12 +1,20 @@
 from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
+
 from apps.notifications.services import (
     notify_doctor_lab_ready,
     notify_doctor_lab_unavailable,
     notify_lab_rejected,
 )
-from .models import LabRequest, LabRequestItem, LabResultAttachment
+from .models import (
+    LabRequest,
+    LabRequestItem,
+    LabResultAttachment,
+    LabStockMovement,
+    LabTestRestock,
+)
 
 
 @transaction.atomic
@@ -127,10 +135,132 @@ def update_lab_request_status(lab_request):
 
 
 @transaction.atomic
+def create_lab_stock_movement(
+    *,
+    lab_test,
+    movement_type,
+    quantity,
+    previous_stock,
+    new_stock,
+    performed_by=None,
+    reason="",
+    notes="",
+    lab_request_item=None,
+    restock_record=None,
+):
+    return LabStockMovement.objects.create(
+        lab_test=lab_test,
+        movement_type=movement_type,
+        quantity=quantity,
+        previous_stock=previous_stock,
+        new_stock=new_stock,
+        performed_by=performed_by,
+        reason=reason,
+        notes=notes,
+        lab_request_item=lab_request_item,
+        restock_record=restock_record,
+    )
+
+
+@transaction.atomic
+def restock_lab_test(
+    *,
+    lab_test,
+    quantity_added,
+    lab_technician=None,
+    supplier_name="",
+    batch_number="",
+    notes="",
+):
+    if quantity_added <= 0:
+        raise ValueError("Restock quantity must be greater than zero.")
+
+    previous_stock = lab_test.stock_quantity
+    lab_test.stock_quantity += quantity_added
+    lab_test.is_available = lab_test.stock_quantity > 0
+    lab_test.save(update_fields=["stock_quantity", "is_available", "updated_at"])
+
+    restock_record = LabTestRestock.objects.create(
+        lab_test=lab_test,
+        quantity_added=quantity_added,
+        supplier_name=supplier_name,
+        batch_number=batch_number,
+        notes=notes,
+        restocked_by=lab_technician,
+    )
+
+    create_lab_stock_movement(
+        lab_test=lab_test,
+        movement_type=LabStockMovement.MovementType.RESTOCK,
+        quantity=quantity_added,
+        previous_stock=previous_stock,
+        new_stock=lab_test.stock_quantity,
+        performed_by=lab_technician,
+        reason="Lab test restock",
+        notes=notes,
+        restock_record=restock_record,
+    )
+
+    return restock_record
+
+
+@transaction.atomic
+def adjust_lab_test_stock(
+    *,
+    lab_test,
+    quantity_change,
+    lab_technician=None,
+    reason="Manual stock adjustment",
+    notes="",
+):
+    previous_stock = lab_test.stock_quantity
+    new_stock = previous_stock + quantity_change
+
+    if new_stock < 0:
+        raise ValueError("Stock adjustment would make stock negative.")
+
+    lab_test.stock_quantity = new_stock
+    lab_test.is_available = lab_test.stock_quantity > 0
+    lab_test.save(update_fields=["stock_quantity", "is_available", "updated_at"])
+
+    create_lab_stock_movement(
+        lab_test=lab_test,
+        movement_type=LabStockMovement.MovementType.ADJUSTMENT,
+        quantity=quantity_change,
+        previous_stock=previous_stock,
+        new_stock=new_stock,
+        performed_by=lab_technician,
+        reason=reason,
+        notes=notes,
+    )
+
+    return lab_test
+
+
+@transaction.atomic
 def technician_update_result_item(item, form, files, user):
     item = form.save(commit=False)
 
     if item.status == LabRequestItem.Status.READY:
+        if item.lab_test.stock_quantity <= 0:
+            raise ValueError("This lab test is out of stock and cannot be marked ready.")
+
+        previous_stock = item.lab_test.stock_quantity
+        item.lab_test.stock_quantity -= 1
+        item.lab_test.is_available = item.lab_test.stock_quantity > 0
+        item.lab_test.save(update_fields=["stock_quantity", "is_available", "updated_at"])
+
+        create_lab_stock_movement(
+            lab_test=item.lab_test,
+            movement_type=LabStockMovement.MovementType.CONSUMPTION,
+            quantity=-1,
+            previous_stock=previous_stock,
+            new_stock=item.lab_test.stock_quantity,
+            performed_by=user,
+            reason="Lab test consumed while preparing result",
+            lab_request_item=item,
+        )
+
         item.uploaded_by = user
         item.uploaded_at = timezone.now()
         item.unavailable_note = ""

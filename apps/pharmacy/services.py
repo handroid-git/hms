@@ -1,7 +1,9 @@
 from decimal import Decimal
+
 from django.db import transaction
+
 from apps.billing.models import Billing
-from .models import PrescriptionItem
+from .models import DrugIssue, DrugRestock, DrugStockMovement, PrescriptionItem
 
 
 @transaction.atomic
@@ -67,12 +69,128 @@ def prescription_is_paid(item):
 
 
 @transaction.atomic
+def create_drug_stock_movement(
+    *,
+    drug,
+    movement_type,
+    quantity,
+    previous_stock,
+    new_stock,
+    performed_by=None,
+    reason="",
+    notes="",
+    prescription_item=None,
+    restock_record=None,
+):
+    return DrugStockMovement.objects.create(
+        drug=drug,
+        movement_type=movement_type,
+        quantity=quantity,
+        previous_stock=previous_stock,
+        new_stock=new_stock,
+        performed_by=performed_by,
+        reason=reason,
+        notes=notes,
+        prescription_item=prescription_item,
+        restock_record=restock_record,
+    )
+
+
+@transaction.atomic
+def restock_drug(
+    *,
+    drug,
+    quantity_added,
+    pharmacist=None,
+    unit_cost=Decimal("0.00"),
+    supplier_name="",
+    batch_number="",
+    expiration_date=None,
+    notes="",
+):
+    if quantity_added <= 0:
+        raise ValueError("Restock quantity must be greater than zero.")
+
+    previous_stock = drug.stock_quantity
+    drug.stock_quantity += quantity_added
+
+    if expiration_date:
+        drug.expiration_date = expiration_date
+
+    drug.is_available = drug.stock_quantity > 0 and not drug.is_expired
+    drug.save(update_fields=["stock_quantity", "expiration_date", "is_available", "updated_at"])
+
+    restock_record = DrugRestock.objects.create(
+        drug=drug,
+        quantity_added=quantity_added,
+        unit_cost=unit_cost,
+        supplier_name=supplier_name,
+        batch_number=batch_number,
+        expiration_date=expiration_date,
+        notes=notes,
+        restocked_by=pharmacist,
+    )
+
+    create_drug_stock_movement(
+        drug=drug,
+        movement_type=DrugStockMovement.MovementType.RESTOCK,
+        quantity=quantity_added,
+        previous_stock=previous_stock,
+        new_stock=drug.stock_quantity,
+        performed_by=pharmacist,
+        reason="Drug restock",
+        notes=notes,
+        restock_record=restock_record,
+    )
+
+    return restock_record
+
+
+@transaction.atomic
+def adjust_drug_stock(
+    *,
+    drug,
+    quantity_change,
+    pharmacist=None,
+    reason="Manual stock adjustment",
+    notes="",
+):
+    previous_stock = drug.stock_quantity
+    new_stock = previous_stock + quantity_change
+
+    if new_stock < 0:
+        raise ValueError("Stock adjustment would make stock negative.")
+
+    drug.stock_quantity = new_stock
+    drug.is_available = drug.stock_quantity > 0 and not drug.is_expired
+    drug.save(update_fields=["stock_quantity", "is_available", "updated_at"])
+
+    create_drug_stock_movement(
+        drug=drug,
+        movement_type=DrugStockMovement.MovementType.ADJUSTMENT,
+        quantity=quantity_change,
+        previous_stock=previous_stock,
+        new_stock=new_stock,
+        performed_by=pharmacist,
+        reason=reason,
+        notes=notes,
+    )
+
+    return drug
+
+
+@transaction.atomic
 def issue_drug(item, pharmacist, received_by_name="", received_by_phone="", notes=""):
+    if item.drug.is_expired:
+        raise ValueError("This drug is expired and cannot be issued.")
+
     if item.drug.stock_quantity < item.quantity:
         raise ValueError("Not enough stock to issue this drug.")
 
+    previous_stock = item.drug.stock_quantity
     item.drug.stock_quantity -= item.quantity
-    item.drug.save(update_fields=["stock_quantity", "updated_at"])
+    item.drug.is_available = item.drug.stock_quantity > 0 and not item.drug.is_expired
+    item.drug.save(update_fields=["stock_quantity", "is_available", "updated_at"])
 
     item.status = PrescriptionItem.Status.ISSUED
     item.save(update_fields=["status", "updated_at"])
@@ -85,13 +203,24 @@ def issue_drug(item, pharmacist, received_by_name="", received_by_phone="", note
         issue_record.issued_by = pharmacist
         issue_record.save()
     else:
-        from .models import DrugIssue
-        DrugIssue.objects.create(
+        issue_record = DrugIssue.objects.create(
             prescription_item=item,
             issued_by=pharmacist,
             received_by_name=received_by_name,
             received_by_phone=received_by_phone,
             notes=notes,
         )
+
+    create_drug_stock_movement(
+        drug=item.drug,
+        movement_type=DrugStockMovement.MovementType.ISSUE,
+        quantity=-int(item.quantity),
+        previous_stock=previous_stock,
+        new_stock=item.drug.stock_quantity,
+        performed_by=pharmacist,
+        reason="Drug issued to patient",
+        notes=notes,
+        prescription_item=item,
+    )
 
     return item

@@ -8,9 +8,20 @@ from apps.accounts.models import Role, User
 from apps.admissions.models import Admission
 from apps.billing.models import Billing
 from apps.consultations.models import Consultation
-from apps.laboratory.models import LabRequest, LabRequestItem, LabTest
+from apps.laboratory.models import (
+    LabRequest,
+    LabRequestItem,
+    LabStockMovement,
+    LabTest,
+    LabTestRestock,
+)
 from apps.patients.models import Patient
-from apps.pharmacy.models import Drug, PrescriptionItem
+from apps.pharmacy.models import (
+    Drug,
+    DrugRestock,
+    DrugStockMovement,
+    PrescriptionItem,
+)
 from apps.waiting_room.models import WaitingRoomEntry
 
 
@@ -68,8 +79,6 @@ def nurse_dashboard_data(user):
     total_triaged = waiting_entries.count()
     triaged_today = waiting_entries.filter(created_at__date=today).count()
 
-    # Only count patients who are still actually waiting in the queue.
-    # Do not include patients already moved into consultation.
     active_waiting_room_count = WaitingRoomEntry.objects.filter(
         is_active=True,
         status=WaitingRoomEntry.Status.WAITING,
@@ -143,11 +152,15 @@ def lab_dashboard_data(user):
     month_start = today.replace(day=1)
 
     items = LabRequestItem.objects.all()
+    all_tests = list(LabTest.objects.all())
 
     completed_items = items.filter(
         status__in=[LabRequestItem.Status.READY, LabRequestItem.Status.ACCEPTED],
         uploaded_at__isnull=False,
     )
+
+    low_stock_tests = [test for test in all_tests if 0 < test.stock_quantity <= test.low_stock_threshold]
+    out_of_stock_tests = [test for test in all_tests if test.stock_quantity == 0]
 
     return {
         "tests_today": completed_items.filter(uploaded_at__date=today).count(),
@@ -159,17 +172,32 @@ def lab_dashboard_data(user):
         "rejected_tests": items.filter(status=LabRequestItem.Status.REJECTED).count(),
         "unavailable_tests": items.filter(status=LabRequestItem.Status.UNAVAILABLE).count(),
         "available_tests": LabTest.objects.filter(is_available=True).count(),
+        "low_stock_tests_count": len(low_stock_tests),
+        "out_of_stock_tests_count": len(out_of_stock_tests),
+        "recent_restock_count": LabTestRestock.objects.filter(restocked_at__date=today).count(),
     }
 
 
 def pharmacy_dashboard_data(user):
-    drugs = Drug.objects.all()
+    today = timezone.localdate()
+    all_drugs = list(Drug.objects.all())
+
+    low_stock_drugs = [
+        drug for drug in all_drugs
+        if 0 < drug.stock_quantity <= drug.low_stock_threshold
+    ]
+    out_of_stock_drugs = [drug for drug in all_drugs if drug.stock_quantity == 0]
+    near_expiry_drugs = [drug for drug in all_drugs if drug.is_near_expiry]
+    expired_drugs = [drug for drug in all_drugs if drug.is_expired]
 
     return {
-        "total_drugs": drugs.count(),
-        "available_drugs": drugs.filter(stock_quantity__gt=0).count(),
-        "low_stock": drugs.filter(stock_quantity__lte=10, stock_quantity__gt=0).count(),
-        "out_of_stock": drugs.filter(stock_quantity=0).count(),
+        "total_drugs": len(all_drugs),
+        "available_drugs": sum(1 for drug in all_drugs if drug.stock_quantity > 0),
+        "low_stock": len(low_stock_drugs),
+        "out_of_stock": len(out_of_stock_drugs),
+        "near_expiry_count": len(near_expiry_drugs),
+        "expired_count": len(expired_drugs),
+        "recent_restock_count": DrugRestock.objects.filter(restocked_at__date=today).count(),
     }
 
 
@@ -219,8 +247,8 @@ def admin_dashboard_data(user):
     ).count()
 
     low_stock_drug_count = Drug.objects.filter(
-        stock_quantity__lte=10,
         stock_quantity__gt=0,
+        stock_quantity__lte=10,
     ).count()
 
     role_counts = {
@@ -325,8 +353,10 @@ def lab_dashboard_workflow_context(user):
         "lab_test",
     ).order_by("-id")
 
-    available_tests = LabTest.objects.order_by("name")
-    low_stock_tests = [test for test in available_tests if test.is_low_stock]
+    all_tests = list(LabTest.objects.order_by("name"))
+    low_stock_tests = [test for test in all_tests if 0 < test.stock_quantity <= test.low_stock_threshold]
+    recent_restocks = LabTestRestock.objects.select_related("lab_test", "restocked_by").order_by("-restocked_at")[:5]
+    recent_stock_movements = LabStockMovement.objects.select_related("lab_test", "performed_by").order_by("-created_at")[:8]
 
     today = timezone.localdate()
     completed_today = LabRequestItem.objects.filter(
@@ -343,8 +373,10 @@ def lab_dashboard_workflow_context(user):
     return {
         "active_requests": active_requests,
         "pending_items": pending_items,
-        "available_tests": available_tests[:10],
+        "available_tests": all_tests[:10],
         "low_stock_tests": low_stock_tests,
+        "recent_lab_restocks": recent_restocks,
+        "recent_lab_stock_movements": recent_stock_movements,
         "completed_today": completed_today,
         "completed_all_time": completed_all_time,
     }
@@ -359,9 +391,15 @@ def pharmacy_dashboard_workflow_context(user):
         ]
     ).select_related("patient", "drug", "consultation").order_by("-updated_at")
 
-    available_drugs = Drug.objects.order_by("name")
-    low_stock_drugs = [drug for drug in available_drugs if drug.is_low_stock]
-    expired_drugs = [drug for drug in available_drugs if drug.is_expired]
+    all_drugs = list(Drug.objects.order_by("name"))
+    low_stock_drugs = [
+        drug for drug in all_drugs
+        if 0 < drug.stock_quantity <= drug.low_stock_threshold
+    ]
+    expired_drugs = [drug for drug in all_drugs if drug.is_expired]
+    near_expiry_drugs = [drug for drug in all_drugs if drug.is_near_expiry]
+    recent_restocks = DrugRestock.objects.select_related("drug", "restocked_by").order_by("-restocked_at")[:5]
+    recent_stock_movements = DrugStockMovement.objects.select_related("drug", "performed_by").order_by("-created_at")[:8]
 
     today = timezone.localdate()
     issued_today = PrescriptionItem.objects.filter(
@@ -379,6 +417,9 @@ def pharmacy_dashboard_workflow_context(user):
         "pending_items": pending_items,
         "low_stock_drugs": low_stock_drugs,
         "expired_drugs": expired_drugs,
+        "near_expiry_drugs": near_expiry_drugs,
+        "recent_drug_restocks": recent_restocks,
+        "recent_drug_stock_movements": recent_stock_movements,
         "issued_today": issued_today,
         "issued_all_time": issued_all_time,
     }

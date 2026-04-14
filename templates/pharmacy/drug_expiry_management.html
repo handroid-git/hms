@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Drug Expiry Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">Drug Expiry Management</h1>
+            <p class="text-base-content/70">Monitor expired, near-expiry, and missing-expiry drug records.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'drug_list' %}" class="btn btn-outline">Back to Drugs</a>
+            <a href="{% url 'drug_restock_create' %}" class="btn btn-primary">Restock Drug</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <h2 class="card-title text-error">Expired Drugs</h2>
+                <p class="text-3xl font-bold text-error">{{ expired_drugs|length }}</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <h2 class="card-title text-warning">Near Expiry</h2>
+                <p class="text-3xl font-bold text-warning">{{ near_expiry_drugs|length }}</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">No Expiry Date</h2>
+                <p class="text-3xl font-bold">{{ no_expiry_drugs|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title text-error">Expired Drugs</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Stock</th>
+                            <th>Expiry Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for drug in expired_drugs %}
+                            <tr>
+                                <td>{{ drug.name }}</td>
+                                <td>{{ drug.stock_quantity }}</td>
+                                <td>{{ drug.expiration_date }}</td>
+                                <td><a href="{% url 'drug_update' drug.pk %}" class="btn btn-sm btn-outline">Edit</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">No expired drugs.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title text-warning">Near Expiry Drugs</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Stock</th>
+                            <th>Expiry Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for drug in near_expiry_drugs %}
+                            <tr>
+                                <td>{{ drug.name }}</td>
+                                <td>{{ drug.stock_quantity }}</td>
+                                <td>{{ drug.expiration_date }}</td>
+                                <td><a href="{% url 'drug_update' drug.pk %}" class="btn btn-sm btn-outline">Edit</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">No near-expiry drugs.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Drugs Without Expiry Date</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for drug in no_expiry_drugs %}
+                            <tr>
+                                <td>{{ drug.name }}</td>
+                                <td>{{ drug.stock_quantity }}</td>
+                                <td>{{ drug.stock_status_label }}</td>
+                                <td><a href="{% url 'drug_update' drug.pk %}" class="btn btn-sm btn-outline">Edit</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4">All drugs have expiry dates.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

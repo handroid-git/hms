@@ -20,6 +20,12 @@
         </div>
     {% endif %}
 
+    {% if near_expiry_drugs %}
+        <div class="alert alert-info shadow-sm">
+            <span>Some drugs are near expiry within 30 days.</span>
+        </div>
+    {% endif %}
+
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
@@ -62,7 +68,60 @@
                 <p class="text-3xl font-bold text-error">{{ data.out_of_stock }}</p>
             </div>
         </div>
+
+        <div class="card bg-base-100 shadow-sm border border-info">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-info">Near Expiry</h2>
+                <p class="text-3xl font-bold text-info">{{ data.near_expiry_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-error">Expired Drugs</h2>
+                <p class="text-3xl font-bold text-error">{{ data.expired_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Restocks Today</h2>
+                <p class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
+            </div>
+        </div>
     </div>
+
+    {% if near_expiry_drugs %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Near Expiry Drugs</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Drug</th>
+                                <th>Stock</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for drug in near_expiry_drugs %}
+                                <tr>
+                                    <td>{{ drug.name }}</td>
+                                    <td>{{ drug.stock_quantity }}</td>
+                                    <td>{{ drug.expiration_date|default:"-" }}</td>
+                                    <td>{{ drug.stock_status_label }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4">No near expiry drugs.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
@@ -96,12 +155,78 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Restocks</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Drug</th>
+                                <th>Qty Added</th>
+                                <th>Supplier</th>
+                                <th>When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for restock in recent_drug_restocks %}
+                                <tr>
+                                    <td>{{ restock.drug.name }}</td>
+                                    <td>{{ restock.quantity_added }}</td>
+                                    <td>{{ restock.supplier_name|default:"-" }}</td>
+                                    <td>{{ restock.restocked_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4">No recent restocks.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Stock Movements</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Drug</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_drug_stock_movements %}
+                                <tr>
+                                    <td>{{ movement.drug.name }}</td>
+                                    <td>{{ movement.get_movement_type_display }}</td>
+                                    <td>{{ movement.quantity }}</td>
+                                    <td>{{ movement.created_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4">No recent stock movements.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
-            <h2 class="card-title">Quick Actions</h2>
+            <h2 class="card-title">Inventory Actions</h2>
             <div class="flex flex-wrap gap-3">
                 <a href="{% url 'drug_list' %}" class="btn btn-outline">View Drugs</a>
                 <a href="{% url 'drug_create' %}" class="btn btn-primary">Create Drug</a>
+                <a href="{% url 'drug_restock_create' %}" class="btn btn-outline">Restock Drug</a>
+                <a href="{% url 'drug_stock_adjustment_create' %}" class="btn btn-outline">Adjust Stock</a>
+                <a href="{% url 'drug_expiry_management' %}" class="btn btn-outline">Expiry Management</a>
+                <a href="{% url 'drug_stock_movement_list' %}" class="btn btn-outline">Stock Movements</a>
             </div>
         </div>
     </div>

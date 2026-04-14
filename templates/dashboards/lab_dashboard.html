@@ -77,6 +77,27 @@
                 <p class="text-3xl font-bold text-error">{{ data.unavailable_tests }}</p>
             </div>
         </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-warning">Low Stock Tests</h2>
+                <p class="text-3xl font-bold text-warning">{{ data.low_stock_tests_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <h2 class="card-title text-lg text-error">Out of Stock Tests</h2>
+                <p class="text-3xl font-bold text-error">{{ data.out_of_stock_tests_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-lg">Restocks Today</h2>
+                <p class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
+            </div>
+        </div>
     </div>
 
     <div class="card bg-base-100 shadow-sm">
@@ -163,12 +184,77 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Restocks</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Lab Test</th>
+                                <th>Qty Added</th>
+                                <th>Supplier</th>
+                                <th>When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for restock in recent_lab_restocks %}
+                                <tr>
+                                    <td>{{ restock.lab_test.name }}</td>
+                                    <td>{{ restock.quantity_added }}</td>
+                                    <td>{{ restock.supplier_name|default:"-" }}</td>
+                                    <td>{{ restock.restocked_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4">No recent restocks.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Stock Movements</h2>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Lab Test</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>When</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_lab_stock_movements %}
+                                <tr>
+                                    <td>{{ movement.lab_test.name }}</td>
+                                    <td>{{ movement.get_movement_type_display }}</td>
+                                    <td>{{ movement.quantity }}</td>
+                                    <td>{{ movement.created_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4">No recent stock movements.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
-            <h2 class="card-title">Quick Actions</h2>
+            <h2 class="card-title">Inventory Actions</h2>
             <div class="flex flex-wrap gap-3">
                 <a href="{% url 'lab_test_list' %}" class="btn btn-outline">View Lab Tests</a>
                 <a href="{% url 'lab_test_create' %}" class="btn btn-primary">Create Lab Test</a>
+                <a href="{% url 'lab_test_restock_create' %}" class="btn btn-outline">Restock Lab Test</a>
+                <a href="{% url 'lab_test_stock_adjustment_create' %}" class="btn btn-outline">Adjust Stock</a>
+                <a href="{% url 'lab_stock_movement_list' %}" class="btn btn-outline">Stock Movements</a>
             </div>
         </div>
     </div>

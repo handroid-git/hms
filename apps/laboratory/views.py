@@ -1,16 +1,24 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
 
 from apps.accounts.models import Role
-from apps.dashboards.services import lab_dashboard_data
+from apps.dashboards.services import lab_dashboard_data, lab_dashboard_workflow_context
 
-from .forms import LabResultUpdateForm, LabTestForm
-from .models import LabRequest, LabRequestItem, LabTest
+from .forms import (
+    LabInventoryFilterForm,
+    LabResultUpdateForm,
+    LabStockAdjustmentForm,
+    LabTestForm,
+    LabTestRestockForm,
+)
+from .models import LabRequest, LabRequestItem, LabStockMovement, LabTest
 from .services import (
+    adjust_lab_test_stock,
     doctor_accept_result,
     doctor_reject_result,
+    restock_lab_test,
     technician_update_result_item,
 )
 
@@ -20,57 +28,11 @@ def lab_dashboard(request):
     if request.user.role != Role.LAB_TECHNICIAN:
         return render(request, "dashboards/access_denied.html", status=403)
 
-    active_requests = LabRequest.objects.filter(
-        status__in=[
-            LabRequest.Status.PENDING,
-            LabRequest.Status.IN_PROGRESS,
-            LabRequest.Status.REJECTED,
-        ]
-    ).select_related(
-        "patient",
-        "consultation",
-        "consultation__billing",
-    ).order_by("-updated_at")
-
-    pending_items = LabRequestItem.objects.filter(
-        status__in=[
-            LabRequestItem.Status.PENDING,
-            LabRequestItem.Status.IN_PROGRESS,
-            LabRequestItem.Status.REJECTED,
-        ]
-    ).select_related(
-        "lab_request",
-        "lab_request__patient",
-        "lab_request__consultation",
-        "lab_request__consultation__doctor",
-        "lab_test",
-    ).order_by("-updated_at")
-
-    available_tests = LabTest.objects.order_by("name")
-    low_stock_tests = [test for test in available_tests if test.is_low_stock]
-
-    today = timezone.localdate()
-    completed_today = LabRequestItem.objects.filter(
-        uploaded_by=request.user,
-        status=LabRequestItem.Status.ACCEPTED,
-        doctor_reviewed_at__date=today,
-    ).count()
-
-    completed_all_time = LabRequestItem.objects.filter(
-        uploaded_by=request.user,
-        status=LabRequestItem.Status.ACCEPTED,
-    ).count()
-
     context = {
-        "active_requests": active_requests,
-        "pending_items": pending_items,
-        "available_tests": available_tests[:10],
-        "low_stock_tests": low_stock_tests,
-        "completed_today": completed_today,
-        "completed_all_time": completed_all_time,
         "data": lab_dashboard_data(request.user),
+        **lab_dashboard_workflow_context(request.user),
     }
-    return render(request, "laboratory/lab_dashboard.html", context)
+    return render(request, "dashboards/lab_dashboard.html", context)
 
 
 @login_required
@@ -117,9 +79,12 @@ def lab_result_update(request, item_pk):
     if request.method == "POST":
         form = LabResultUpdateForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
-            technician_update_result_item(item, form, request.FILES, request.user)
-            messages.success(request, "Lab result updated successfully.")
-            return redirect("lab_request_detail", pk=item.lab_request.pk)
+            try:
+                technician_update_result_item(item, form, request.FILES, request.user)
+                messages.success(request, "Lab result updated successfully.")
+                return redirect("lab_request_detail", pk=item.lab_request.pk)
+            except ValueError as exc:
+                messages.error(request, str(exc))
     else:
         form = LabResultUpdateForm(instance=item)
 
@@ -138,8 +103,37 @@ def lab_test_list(request):
     if request.user.role != Role.LAB_TECHNICIAN:
         return render(request, "dashboards/access_denied.html", status=403)
 
+    form = LabInventoryFilterForm(request.GET or None)
     tests = LabTest.objects.order_by("name")
-    return render(request, "laboratory/lab_test_list.html", {"tests": tests})
+
+    if form.is_valid():
+        q = form.cleaned_data.get("q")
+        stock_status = form.cleaned_data.get("stock_status")
+        availability = form.cleaned_data.get("availability")
+
+        if q:
+            tests = tests.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+        if availability == "available":
+            tests = tests.filter(is_available=True)
+        elif availability == "unavailable":
+            tests = tests.filter(is_available=False)
+
+        if stock_status == "out_of_stock":
+            tests = tests.filter(stock_quantity=0)
+        elif stock_status == "low_stock":
+            tests = [test for test in tests if test.is_low_stock and test.stock_quantity > 0]
+        elif stock_status == "in_stock":
+            tests = [test for test in tests if test.stock_quantity > 0 and not test.is_low_stock]
+
+    return render(
+        request,
+        "laboratory/lab_test_list.html",
+        {
+            "tests": tests,
+            "filter_form": form,
+        },
+    )
 
 
 @login_required
@@ -214,3 +208,90 @@ def doctor_reject_lab_result(request, item_pk):
     doctor_reject_result(item, request.user)
     messages.warning(request, "Lab result rejected and returned to laboratory.")
     return redirect("consultation_detail", pk=item.lab_request.consultation.pk)
+
+
+@login_required
+def lab_test_restock_create(request):
+    if request.user.role != Role.LAB_TECHNICIAN:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    if request.method == "POST":
+        form = LabTestRestockForm(request.POST)
+        if form.is_valid():
+            try:
+                restock_lab_test(
+                    lab_test=form.cleaned_data["lab_test"],
+                    quantity_added=form.cleaned_data["quantity_added"],
+                    lab_technician=request.user,
+                    supplier_name=form.cleaned_data.get("supplier_name", ""),
+                    batch_number=form.cleaned_data.get("batch_number", ""),
+                    notes=form.cleaned_data.get("notes", ""),
+                )
+                messages.success(request, "Lab test stock restocked successfully.")
+                return redirect("lab_stock_movement_list")
+            except ValueError as exc:
+                messages.error(request, str(exc))
+    else:
+        form = LabTestRestockForm()
+
+    return render(
+        request,
+        "laboratory/lab_test_restock_form.html",
+        {
+            "form": form,
+            "title": "Restock Lab Test",
+        },
+    )
+
+
+@login_required
+def lab_test_stock_adjustment_create(request):
+    if request.user.role != Role.LAB_TECHNICIAN:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    if request.method == "POST":
+        form = LabStockAdjustmentForm(request.POST)
+        if form.is_valid():
+            try:
+                adjust_lab_test_stock(
+                    lab_test=form.cleaned_data["lab_test"],
+                    quantity_change=form.cleaned_data["quantity_change"],
+                    lab_technician=request.user,
+                    reason=form.cleaned_data["reason"],
+                    notes=form.cleaned_data.get("notes", ""),
+                )
+                messages.success(request, "Lab stock adjusted successfully.")
+                return redirect("lab_stock_movement_list")
+            except ValueError as exc:
+                messages.error(request, str(exc))
+    else:
+        form = LabStockAdjustmentForm()
+
+    return render(
+        request,
+        "laboratory/lab_stock_adjustment_form.html",
+        {
+            "form": form,
+            "title": "Adjust Lab Stock",
+        },
+    )
+
+
+@login_required
+def lab_stock_movement_list(request):
+    if request.user.role != Role.LAB_TECHNICIAN:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    movements = LabStockMovement.objects.select_related(
+        "lab_test",
+        "performed_by",
+        "lab_request_item",
+        "restock_record",
+    )
+    return render(
+        request,
+        "laboratory/lab_stock_movement_list.html",
+        {
+            "movements": movements,
+        },
+    )

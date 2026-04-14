@@ -4,8 +4,11 @@ from .views import (
     doctor_reject_lab_result,
     lab_request_detail,
     lab_result_update,
+    lab_stock_movement_list,
     lab_test_create,
     lab_test_list,
+    lab_test_restock_create,
+    lab_test_stock_adjustment_create,
     lab_test_update,
 )
 
@@ -17,4 +20,7 @@ urlpatterns = [
     path("tests/", lab_test_list, name="lab_test_list"),
     path("tests/create/", lab_test_create, name="lab_test_create"),
     path("tests/<uuid:pk>/update/", lab_test_update, name="lab_test_update"),
+    path("tests/restock/", lab_test_restock_create, name="lab_test_restock_create"),
+    path("tests/adjust-stock/", lab_test_stock_adjustment_create, name="lab_test_stock_adjustment_create"),
+    path("stock-movements/", lab_stock_movement_list, name="lab_stock_movement_list"),
 ]

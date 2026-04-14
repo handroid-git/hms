@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">{{ title }}</h1>
+            <p class="text-base-content/70">
+                Use positive values to add stock and negative values to reduce stock for corrections, losses, or damaged items.
+            </p>
+
+            <form method="post" class="grid grid-cols-1 gap-4 mt-4">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label class="label">
+                            <span class="label-text">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <p class="text-sm text-base-content/60 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                            <p class="text-error text-sm mt-1">{{ field.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div>
+                    <button type="submit" class="btn btn-primary">Save Adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

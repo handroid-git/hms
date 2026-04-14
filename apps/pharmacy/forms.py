@@ -1,5 +1,8 @@
+from decimal import Decimal
+
 from django import forms
-from .models import Drug, DrugIssue, PrescriptionItem
+
+from .models import Drug, DrugRestock, PrescriptionItem
 
 
 class DrugForm(forms.ModelForm):
@@ -24,41 +27,122 @@ class DrugForm(forms.ModelForm):
         }
 
 
-class PrescriptionSelectionForm(forms.Form):
-    drugs = forms.ModelMultipleChoiceField(
-        queryset=Drug.objects.filter(is_available=True).order_by("name"),
-        widget=forms.CheckboxSelectMultiple,
-        required=False,
-    )
-
-
 class PrescriptionItemUpdateForm(forms.ModelForm):
     class Meta:
         model = PrescriptionItem
-        fields = ["quantity", "instructions", "status", "unavailable_note"]
+        fields = ["status", "unavailable_note", "instructions", "quantity"]
         widgets = {
-            "quantity": forms.NumberInput(attrs={"class": "input input-bordered w-full"}),
-            "instructions": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
             "status": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "unavailable_note": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+            "instructions": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+            "quantity": forms.NumberInput(attrs={"class": "input input-bordered w-full", "min": "1"}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["status"].choices = [
-            (PrescriptionItem.Status.AWAITING_PAYMENT, "Awaiting Payment"),
-            (PrescriptionItem.Status.READY_TO_ISSUE, "Ready To Issue"),
-            (PrescriptionItem.Status.UNAVAILABLE, "Unavailable"),
-        ]
+    def clean_quantity(self):
+        quantity = self.cleaned_data["quantity"]
+        if quantity <= 0:
+            raise forms.ValidationError("Quantity must be greater than zero.")
+        return quantity
 
 
-class DrugIssueForm(forms.ModelForm):
+class DrugIssueForm(forms.Form):
+    received_by_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+    )
+    received_by_phone = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+    )
+
+
+class DrugRestockForm(forms.ModelForm):
     class Meta:
-        model = DrugIssue
-        fields = ["received_by_name", "received_by_phone", "notes"]
+        model = DrugRestock
+        fields = [
+            "drug",
+            "quantity_added",
+            "unit_cost",
+            "supplier_name",
+            "batch_number",
+            "expiration_date",
+            "notes",
+        ]
         widgets = {
-            "received_by_name": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
-            "received_by_phone": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "drug": forms.Select(attrs={"class": "select select-bordered w-full"}),
+            "quantity_added": forms.NumberInput(attrs={"class": "input input-bordered w-full", "min": "1"}),
+            "unit_cost": forms.NumberInput(attrs={"class": "input input-bordered w-full", "step": "0.01"}),
+            "supplier_name": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "batch_number": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "expiration_date": forms.DateInput(attrs={"class": "input input-bordered w-full", "type": "date"}),
             "notes": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
         }
+
+    def clean_quantity_added(self):
+        quantity = self.cleaned_data["quantity_added"]
+        if quantity <= 0:
+            raise forms.ValidationError("Quantity added must be greater than zero.")
+        return quantity
+
+    def clean_unit_cost(self):
+        unit_cost = self.cleaned_data.get("unit_cost") or Decimal("0.00")
+        if unit_cost < Decimal("0.00"):
+            raise forms.ValidationError("Unit cost cannot be negative.")
+        return unit_cost
+
+
+class DrugStockAdjustmentForm(forms.Form):
+    drug = forms.ModelChoiceField(
+        queryset=Drug.objects.order_by("name"),
+        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
+    )
+    quantity_change = forms.IntegerField(
+        widget=forms.NumberInput(attrs={"class": "input input-bordered w-full"}),
+        help_text="Use positive numbers to increase stock and negative numbers to reduce stock.",
+    )
+    reason = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+        initial="Manual stock adjustment",
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
+    )
+
+    def clean_quantity_change(self):
+        quantity_change = self.cleaned_data["quantity_change"]
+        if quantity_change == 0:
+            raise forms.ValidationError("Quantity change cannot be zero.")
+        return quantity_change
+
+
+class DrugInventoryFilterForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input input-bordered w-full", "placeholder": "Search by drug name"}),
+    )
+    stock_status = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("", "All stock statuses"),
+            ("in_stock", "In Stock"),
+            ("low_stock", "Low Stock"),
+            ("out_of_stock", "Out of Stock"),
+            ("expired", "Expired"),
+            ("near_expiry", "Near Expiry"),
+        ],
+        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
+    )
+    availability = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("", "All availability"),
+            ("available", "Available"),
+            ("unavailable", "Unavailable"),
+        ],
+        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
+    )
