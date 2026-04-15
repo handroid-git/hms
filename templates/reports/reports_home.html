@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-3xl">Reports & Analytics</h1>
+            <p class="text-base-content/70">
+                View management reports, financial summaries, and operational insights for the hospital.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <a href="{% url 'financial_report' %}" class="card bg-base-100 shadow-sm hover:shadow-md transition">
+            <div class="card-body">
+                <h2 class="card-title">Financial Reports</h2>
+                <span class="btn btn-primary btn-sm">Open</span>
+            </div>
+        </a>
+
+        <a href="{% url 'clinical_workflow_report' %}" class="card bg-base-100 shadow-sm hover:shadow-md transition">
+            <div class="card-body">
+                <h2 class="card-title">Clinical & Workflow</h2>
+                <span class="btn btn-primary btn-sm">Open</span>
+            </div>
+        </a>
+
+        <a href="{% url 'lab_pharmacy_report' %}" class="card bg-base-100 shadow-sm hover:shadow-md transition">
+            <div class="card-body">
+                <h2 class="card-title">Lab & Pharmacy</h2>
+                <span class="btn btn-primary btn-sm">Open</span>
+            </div>
+        </a>
+
+        <a href="{% url 'staff_performance_report' %}" class="card bg-base-100 shadow-sm hover:shadow-md transition">
+            <div class="card-body">
+                <h2 class="card-title">Staff Performance</h2>
+                <p class="text-sm text-base-content/70">
+                    Monitor doctor productivity, nurse discharges, lab output, and pharmacy activity.
+                </p>
+                <span class="btn btn-primary btn-sm">Open</span>
+            </div>
+        </a>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Financial Report{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Financial Report</h1>
+            <p class="text-base-content/70">
+                Billing and payment report from {{ start_date }} to {{ end_date }}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'export_financial_report_xlsx' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
+                Export XLSX
+            </a>
+            <a href="{% url 'export_financial_report_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-outline btn-sm">
+                Export PDF
+            </a>
+            <a href="{% url 'reports_home' %}" class="btn btn-outline">
+                Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Filter Report</h2>
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="label">
+                        <span class="label-text">Start Date</span>
+                    </label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.start_date.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label">
+                        <span class="label-text">End Date</span>
+                    </label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.end_date.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary w-full md:w-auto">
+                        Apply Filter
+                    </button>
+                    <a href="{% url 'financial_report' %}" class="btn btn-outline w-full md:w-auto">
+                        Today
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Total Billing Generated</p>
+                <h2 class="text-2xl font-bold">₦{{ total_generated }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-success">
+            <div class="card-body">
+                <p class="text-sm text-success">Total Paid</p>
+                <h2 class="text-2xl font-bold text-success">₦{{ total_paid }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <p class="text-sm text-error">Outstanding Balance</p>
+                <h2 class="text-2xl font-bold text-error">₦{{ total_balance }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Payment Transactions Total</p>
+                <h2 class="text-2xl font-bold">₦{{ payment_total }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Consultation Fees</p>
+                <h2 class="text-xl font-bold">₦{{ total_consultation_fees }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Lab Total</p>
+                <h2 class="text-xl font-bold">₦{{ total_lab }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Prescription Total</p>
+                <h2 class="text-xl font-bold">₦{{ total_prescriptions }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Medication Total</p>
+                <h2 class="text-xl font-bold">₦{{ total_medications }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Other Charges</p>
+                <h2 class="text-xl font-bold">₦{{ total_other_charges }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Discounts</p>
+                <h2 class="text-xl font-bold">₦{{ total_discounts }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Brought Forward</p>
+                <h2 class="text-xl font-bold">₦{{ total_brought_forward }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Archived Bills in Range</p>
+                <h2 class="text-xl font-bold">{{ archived_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Active Bills</p>
+                <h2 class="text-xl font-bold">{{ active_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-error">
+            <div class="card-body">
+                <p class="text-sm text-error">Unpaid Bills</p>
+                <h2 class="text-xl font-bold text-error">{{ unpaid_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-warning">
+            <div class="card-body">
+                <p class="text-sm text-warning">Part Paid Bills</p>
+                <h2 class="text-xl font-bold text-warning">{{ part_paid_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-info">
+            <div class="card-body">
+                <p class="text-sm text-info">Deposit Bills</p>
+                <h2 class="text-xl font-bold text-info">{{ deposit_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-success">
+            <div class="card-body">
+                <p class="text-sm text-success">Fully Paid Bills</p>
+                <h2 class="text-xl font-bold text-success">{{ paid_full_count }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Deposit Payments Total</p>
+                <h2 class="text-xl font-bold">₦{{ deposit_payment_total }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <p class="text-sm text-base-content/70">Part Payments Total</p>
+                <h2 class="text-xl font-bold">₦{{ part_payment_total }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <p class="text-sm text-base-content/70">Full Payments Total</p>
+            <h2 class="text-xl font-bold">₦{{ full_payment_total }}</h2>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Billing Records</h2>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Hospital No.</th>
+                            <th>Total Amount</th>
+                            <th>Amount Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Archived</th>
+                            <th>Created At</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in billings %}
+                            <tr>
+                                <td>{{ bill.patient.full_name }}</td>
+                                <td>{{ bill.patient.hospital_number }}</td>
+                                <td>₦{{ bill.total_amount }}</td>
+                                <td>₦{{ bill.amount_paid }}</td>
+                                <td>₦{{ bill.balance }}</td>
+                                <td>{{ bill.get_payment_status_display }}</td>
+                                <td>{{ bill.is_archived|yesno:"Yes,No" }}</td>
+                                <td>{{ bill.created_at }}</td>
+                                <td>
+                                    <a href="{% url 'billing_detail' bill.pk %}" class="btn btn-sm btn-outline">
+                                        Open
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="9">No billing records found for the selected date range.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

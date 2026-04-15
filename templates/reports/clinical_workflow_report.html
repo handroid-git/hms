@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Clinical & Workflow Report{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Clinical & Workflow Report</h1>
+            <p class="text-base-content/70">
+                Consultations, waiting room, appointments, and admissions from {{ start_date }} to {{ end_date }}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'export_clinical_workflow_report_xlsx' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
+                Export XLSX
+            </a>
+            <a href="{% url 'export_clinical_workflow_report_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-outline btn-sm">
+                Export PDF
+            </a>
+            <a href="{% url 'reports_home' %}" class="btn btn-outline">
+                Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Filter Report</h2>
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="label"><span class="label-text">Start Date</span></label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.start_date.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">End Date</span></label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                        <p class="text-error text-sm mt-1">{{ form.end_date.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn btn-primary w-full md:w-auto">Apply Filter</button>
+                    <a href="{% url 'clinical_workflow_report' %}" class="btn btn-outline w-full md:w-auto">Today</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Consultation Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                <div><p class="text-sm text-base-content/70">Total</p><h3 class="text-2xl font-bold">{{ total_consultations }}</h3></div>
+                <div><p class="text-sm text-warning">Ongoing</p><h3 class="text-2xl font-bold text-warning">{{ ongoing_consultations }}</h3></div>
+                <div><p class="text-sm text-success">Completed</p><h3 class="text-2xl font-bold text-success">{{ completed_consultations }}</h3></div>
+                <div><p class="text-sm text-info">Referred</p><h3 class="text-2xl font-bold text-info">{{ referred_consultations }}</h3></div>
+                <div><p class="text-sm text-error">Cancelled</p><h3 class="text-2xl font-bold text-error">{{ cancelled_consultations }}</h3></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <p class="text-sm text-base-content/70">Marked Admitted</p>
+                        <h3 class="text-xl font-bold">{{ admitted_from_consultation }}</h3>
+                    </div>
+                </div>
+                <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <p class="text-sm text-base-content/70">Marked Discharged</p>
+                        <h3 class="text-xl font-bold">{{ discharged_from_consultation }}</h3>
+                    </div>
+                </div>
+                <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body p-4">
+                        <p class="text-sm text-base-content/70">Marked Died</p>
+                        <h3 class="text-xl font-bold">{{ died_from_consultation }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Waiting Room Summary</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p class="text-sm text-base-content/70">Total Entries</p><h3 class="text-xl font-bold">{{ total_waiting_entries }}</h3></div>
+                    <div><p class="text-sm text-warning">Active</p><h3 class="text-xl font-bold text-warning">{{ active_waiting_entries }}</h3></div>
+                    <div><p class="text-sm text-success">Completed</p><h3 class="text-xl font-bold text-success">{{ waiting_completed }}</h3></div>
+                    <div><p class="text-sm text-info">In Consultation</p><h3 class="text-xl font-bold text-info">{{ waiting_in_consultation }}</h3></div>
+                    <div><p class="text-sm text-error">Emergency</p><h3 class="text-xl font-bold text-error">{{ emergency_waiting }}</h3></div>
+                    <div><p class="text-sm text-base-content/70">Appointment Priority</p><h3 class="text-xl font-bold">{{ appointment_waiting }}</h3></div>
+                    <div><p class="text-sm text-base-content/70">Normal Priority</p><h3 class="text-xl font-bold">{{ normal_waiting }}</h3></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Appointment Summary</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p class="text-sm text-base-content/70">Total</p><h3 class="text-xl font-bold">{{ total_appointments }}</h3></div>
+                    <div><p class="text-sm text-base-content/70">Scheduled</p><h3 class="text-xl font-bold">{{ scheduled_appointments }}</h3></div>
+                    <div><p class="text-sm text-info">Checked In</p><h3 class="text-xl font-bold text-info">{{ checked_in_appointments }}</h3></div>
+                    <div><p class="text-sm text-success">Completed</p><h3 class="text-xl font-bold text-success">{{ completed_appointments }}</h3></div>
+                    <div><p class="text-sm text-error">Missed</p><h3 class="text-xl font-bold text-error">{{ missed_appointments }}</h3></div>
+                    <div><p class="text-sm text-error">Cancelled</p><h3 class="text-xl font-bold text-error">{{ cancelled_appointments }}</h3></div>
+                    <div><p class="text-sm text-warning">Reassigned</p><h3 class="text-xl font-bold text-warning">{{ reassigned_appointments }}</h3></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Admission Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div><p class="text-sm text-base-content/70">Total Admissions</p><h3 class="text-2xl font-bold">{{ total_admissions }}</h3></div>
+                <div><p class="text-sm text-warning">Active</p><h3 class="text-2xl font-bold text-warning">{{ active_admissions }}</h3></div>
+                <div><p class="text-sm text-info">Pending Nurse Discharge</p><h3 class="text-2xl font-bold text-info">{{ discharge_pending_nurse }}</h3></div>
+                <div><p class="text-sm text-success">Discharged</p><h3 class="text-2xl font-bold text-success">{{ discharged_admissions }}</h3></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Recent Consultations</h2>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Status</th>
+                            <th>Admitted</th>
+                            <th>Discharged</th>
+                            <th>Died</th>
+                            <th>Consulted At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for consultation in consultations %}
+                            <tr>
+                                <td>{{ consultation.patient.full_name }}</td>
+                                <td>{% if consultation.doctor %}{{ consultation.doctor.get_full_name|default:consultation.doctor.username }}{% else %}-{% endif %}</td>
+                                <td>{{ consultation.get_status_display }}</td>
+                                <td>{{ consultation.admitted|yesno:"Yes,No" }}</td>
+                                <td>{{ consultation.discharged|yesno:"Yes,No" }}</td>
+                                <td>{{ consultation.died|yesno:"Yes,No" }}</td>
+                                <td>{{ consultation.consulted_at }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7">No consultations found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Waiting Room Entries</h2>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Assigned Doctor</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in waiting_entries %}
+                                <tr>
+                                    <td>{{ entry.patient.full_name }}</td>
+                                    <td>{{ entry.get_priority_display }}</td>
+                                    <td>{{ entry.get_status_display }}</td>
+                                    <td>{% if entry.assigned_doctor %}{{ entry.assigned_doctor.get_full_name|default:entry.assigned_doctor.username }}{% else %}-{% endif %}</td>
+                                    <td>{{ entry.created_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5">No waiting room records found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Recent Appointments</h2>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                                <tr>
+                                    <td>{{ appointment.patient.full_name }}</td>
+                                    <td>{% if appointment.assigned_doctor %}{{ appointment.assigned_doctor.get_full_name|default:appointment.assigned_doctor.username }}{% else %}-{% endif %}</td>
+                                    <td>{{ appointment.appointment_date }}</td>
+                                    <td>{{ appointment.appointment_time }}</td>
+                                    <td>{{ appointment.get_status_display }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="5">No appointment records found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Recent Admissions</h2>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Status</th>
+                            <th>Ward</th>
+                            <th>Bed</th>
+                            <th>Admitted At</th>
+                            <th>Discharged At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admission in admissions %}
+                            <tr>
+                                <td>{{ admission.patient.full_name }}</td>
+                                <td>{{ admission.get_status_display }}</td>
+                                <td>{{ admission.ward|default:"-" }}</td>
+                                <td>{{ admission.bed_number|default:"-" }}</td>
+                                <td>{{ admission.admitted_at }}</td>
+                                <td>{{ admission.discharged_at|default:"-" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6">No admission records found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

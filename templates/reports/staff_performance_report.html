@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Staff Performance Report{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h1 class="text-2xl font-bold">Staff Performance Report</h1>
+            <p class="text-base-content/70">
+                Staff performance from {{ start_date }} to {{ end_date }}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'export_staff_performance_report_xlsx' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-primary btn-sm">
+                Export XLSX
+            </a>
+            <a href="{% url 'export_staff_performance_report_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" class="btn btn-outline btn-sm">
+                Export PDF
+            </a>
+            <a href="{% url 'reports_home' %}" class="btn btn-outline">
+                Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="flex flex-wrap gap-3">
+        {{ form.start_date }}
+        {{ form.end_date }}
+        <button class="btn btn-primary btn-sm">Filter</button>
+        <a href="{% url 'staff_performance_report' %}" class="btn btn-outline btn-sm">Today</a>
+    </form>
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Doctors</h2>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Consultations</th>
+                        <th>Completed</th>
+                        <th>Admissions</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in doctor_stats %}
+                    <tr>
+                        <td>{{ item.doctor.get_full_name|default:item.doctor.username }}</td>
+                        <td>{{ item.total_consultations }}</td>
+                        <td>{{ item.completed }}</td>
+                        <td>{{ item.admitted }}</td>
+                        <td>₦{{ item.revenue_generated }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">No doctor performance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Nurses</h2>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Discharges Confirmed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in nurse_stats %}
+                    <tr>
+                        <td>{{ item.nurse.get_full_name|default:item.nurse.username }}</td>
+                        <td>{{ item.discharges_confirmed }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">No nurse performance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Lab Technicians</h2>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Completed Tests</th>
+                        <th>Rejected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lab_stats %}
+                    <tr>
+                        <td>{{ item.tech.get_full_name|default:item.tech.username }}</td>
+                        <td>{{ item.completed_tests }}</td>
+                        <td>{{ item.rejected_tests }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">No lab technician performance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Pharmacists</h2>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Drugs Issued</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pharmacy_stats %}
+                    <tr>
+                        <td>{{ item.pharmacist.get_full_name|default:item.pharmacist.username }}</td>
+                        <td>{{ item.drugs_issued }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">No pharmacist performance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
