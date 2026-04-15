@@ -1,6 +1,8 @@
 from django import forms
+
 from apps.laboratory.models import LabTest
 from apps.pharmacy.models import Drug
+
 from .models import Consultation
 
 

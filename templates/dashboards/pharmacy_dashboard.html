@@ -2,91 +2,85 @@
 {% block title %}Pharmacy Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" data-dashboard-live="pharmacy" data-live-url="{% url 'pharmacy_dashboard_live' %}">
     <div>
         <h1 class="text-3xl font-bold">Pharmacy Dashboard</h1>
         <p class="text-base-content/70">Manage prescriptions, issue drugs, monitor stock, and view pharmacy analytics.</p>
     </div>
 
-    {% if low_stock_drugs %}
-        <div class="alert alert-warning shadow-sm">
-            <span>Some drugs are low in stock.</span>
-        </div>
-    {% endif %}
+    <div id="pharmacy-low-stock-alert" class="{% if not low_stock_drugs %}hidden {% endif %}alert alert-warning shadow-sm">
+        <span>Some drugs are low in stock.</span>
+    </div>
 
-    {% if expired_drugs %}
-        <div class="alert alert-error shadow-sm">
-            <span>Some drugs are expired.</span>
-        </div>
-    {% endif %}
+    <div id="pharmacy-expired-alert" class="{% if not expired_drugs %}hidden {% endif %}alert alert-error shadow-sm">
+        <span>Some drugs are expired.</span>
+    </div>
 
-    {% if near_expiry_drugs %}
-        <div class="alert alert-info shadow-sm">
-            <span>Some drugs are near expiry within 30 days.</span>
-        </div>
-    {% endif %}
+    <div id="pharmacy-near-expiry-alert" class="{% if not near_expiry_drugs %}hidden {% endif %}alert alert-info shadow-sm">
+        <span>Some drugs are near expiry within 30 days.</span>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Drugs Issued Today</h2>
-                <p class="text-3xl font-bold">{{ issued_today }}</p>
+                <p id="pharmacy-issued-today" class="text-3xl font-bold">{{ issued_today }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">All-Time Drug Issues</h2>
-                <p class="text-3xl font-bold">{{ issued_all_time }}</p>
+                <p id="pharmacy-issued-all-time" class="text-3xl font-bold">{{ issued_all_time }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Total Drugs</h2>
-                <p class="text-3xl font-bold">{{ data.total_drugs }}</p>
+                <p id="pharmacy-total-drugs" class="text-3xl font-bold">{{ data.total_drugs }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Available Drugs</h2>
-                <p class="text-3xl font-bold">{{ data.available_drugs }}</p>
+                <p id="pharmacy-available-drugs" class="text-3xl font-bold">{{ data.available_drugs }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <h2 class="card-title text-lg text-warning">Low Stock</h2>
-                <p class="text-3xl font-bold text-warning">{{ data.low_stock }}</p>
+                <p id="pharmacy-low-stock-count" class="text-3xl font-bold text-warning">{{ data.low_stock }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-error">
             <div class="card-body">
                 <h2 class="card-title text-lg text-error">Out of Stock</h2>
-                <p class="text-3xl font-bold text-error">{{ data.out_of_stock }}</p>
+                <p id="pharmacy-out-of-stock-count" class="text-3xl font-bold text-error">{{ data.out_of_stock }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-info">
             <div class="card-body">
                 <h2 class="card-title text-lg text-info">Near Expiry</h2>
-                <p class="text-3xl font-bold text-info">{{ data.near_expiry_count }}</p>
+                <p id="pharmacy-near-expiry-count" class="text-3xl font-bold text-info">{{ data.near_expiry_count }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-error">
             <div class="card-body">
                 <h2 class="card-title text-lg text-error">Expired Drugs</h2>
-                <p class="text-3xl font-bold text-error">{{ data.expired_count }}</p>
+                <p id="pharmacy-expired-count" class="text-3xl font-bold text-error">{{ data.expired_count }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Restocks Today</h2>
-                <p class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
+                <p id="pharmacy-restocks-today" class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
             </div>
         </div>
     </div>
@@ -136,19 +130,8 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for item in pending_items %}
-                            <tr>
-                                <td>{{ item.patient.full_name }}</td>
-                                <td>{{ item.drug.name }}</td>
-                                <td>{{ item.get_status_display }}</td>
-                                <td>
-                                    <a href="{% url 'prescription_item_detail' item.pk %}" class="btn btn-sm btn-outline">Open</a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="4">No pending pharmacy work.</td></tr>
-                        {% endfor %}
+                    <tbody id="pharmacy-pending-items-body">
+                        {% include "dashboards/partials/pharmacy_pending_items_table.html" with pending_items=pending_items %}
                     </tbody>
                 </table>
             </div>
@@ -231,4 +214,45 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const root = document.querySelector('[data-dashboard-live="pharmacy"]');
+    if (!root) return;
+
+    const url = root.dataset.liveUrl;
+
+    async function refreshPharmacyDashboard() {
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            document.getElementById("pharmacy-issued-today").textContent = data.issued_today;
+            document.getElementById("pharmacy-issued-all-time").textContent = data.issued_all_time;
+            document.getElementById("pharmacy-total-drugs").textContent = data.total_drugs;
+            document.getElementById("pharmacy-available-drugs").textContent = data.available_drugs;
+            document.getElementById("pharmacy-low-stock-count").textContent = data.low_stock;
+            document.getElementById("pharmacy-out-of-stock-count").textContent = data.out_of_stock;
+            document.getElementById("pharmacy-near-expiry-count").textContent = data.near_expiry_count;
+            document.getElementById("pharmacy-expired-count").textContent = data.expired_count;
+            document.getElementById("pharmacy-restocks-today").textContent = data.recent_restock_count;
+            document.getElementById("pharmacy-pending-items-body").innerHTML = data.pending_items_html;
+
+            document.getElementById("pharmacy-low-stock-alert").classList.toggle("hidden", !data.show_low_stock_alert);
+            document.getElementById("pharmacy-expired-alert").classList.toggle("hidden", !data.show_expired_alert);
+            document.getElementById("pharmacy-near-expiry-alert").classList.toggle("hidden", !data.show_near_expiry_alert);
+        } catch (error) {
+            console.error("Pharmacy dashboard refresh failed:", error);
+        }
+    }
+
+    refreshPharmacyDashboard();
+    setInterval(refreshPharmacyDashboard, 10000);
+})();
+</script>
 {% endblock %}

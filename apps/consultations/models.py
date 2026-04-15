@@ -1,8 +1,10 @@
 import uuid
 from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+
 from apps.patients.models import Patient
 from apps.waiting_room.models import WaitingRoomEntry
 
@@ -68,6 +70,10 @@ class Consultation(models.Model):
         if self.doctor:
             return f"{self.doctor.get_full_name() or self.doctor.username} | {self.consulted_at:%Y-%m-%d %H:%M}"
         return "Unknown"
+
+    @property
+    def is_ongoing(self):
+        return self.status == self.Status.IN_PROGRESS and not self.complete
 
     def __str__(self):
         return f"{self.patient.full_name} - {self.get_status_display()}"

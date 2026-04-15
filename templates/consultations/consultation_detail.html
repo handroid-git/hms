@@ -8,7 +8,10 @@
             <h1 class="text-3xl font-bold">Consultation</h1>
             <p class="text-base-content/70">{{ consultation.patient.full_name }} — {{ consultation.consulted_by_stamp }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'doctor_ongoing_consultations' %}" class="btn btn-outline">
+                Ongoing Consultations
+            </a>
             {% if consultation.admitted %}
                 <a href="{% url 'admission_create_from_consultation' consultation.pk %}" class="btn btn-secondary">
                     Admit Patient
@@ -139,13 +142,18 @@
     {% if prescription_items %}
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Prescriptions</h2>
+                <h2 class="card-title">Doctor Prescriptions</h2>
                 <div class="overflow-x-auto">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>Drug</th>
                                 <th>Quantity</th>
+                                <th>Dosage</th>
+                                <th>Frequency</th>
+                                <th>Route</th>
+                                <th>Duration</th>
+                                <th>Instructions</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -154,10 +162,15 @@
                                 <tr>
                                     <td>{{ item.drug.name }}</td>
                                     <td>{{ item.quantity }}</td>
+                                    <td>{{ item.dosage|default:"-" }}</td>
+                                    <td>{{ item.frequency|default:"-" }}</td>
+                                    <td>{{ item.route|default:"-" }}</td>
+                                    <td>{% if item.duration_days %}{{ item.duration_days }} day(s){% else %}-{% endif %}</td>
+                                    <td>{{ item.instructions|default:"-" }}</td>
                                     <td>{{ item.get_status_display }}</td>
                                 </tr>
                             {% empty %}
-                                <tr><td colspan="3">No prescriptions selected.</td></tr>
+                                <tr><td colspan="8">No prescriptions selected.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -195,8 +208,92 @@
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="label"><span class="label-text">Prescriptions</span></label>
-                    {{ form.selected_drugs }}
+                    <label class="label"><span class="label-text">Doctor Prescriptions</span></label>
+                    <div class="space-y-4">
+                        {% for row in prescription_rows %}
+                            <div class="border border-base-300 rounded-xl p-4">
+                                <label class="label cursor-pointer justify-start gap-3">
+                                    <input
+                                        type="checkbox"
+                                        name="selected_drugs"
+                                        value="{{ row.drug.pk }}"
+                                        class="checkbox prescription-drug-checkbox"
+                                        data-drug-id="{{ row.drug.pk }}"
+                                        {% if row.selected %}checked{% endif %}
+                                    >
+                                    <span class="font-semibold">{{ row.drug.name }}</span>
+                                    <span class="text-sm text-base-content/60">₦{{ row.drug.price }}</span>
+                                </label>
+
+                                <div id="prescription-fields-{{ row.drug.pk }}" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 {% if not row.selected %}hidden{% endif %}">
+                                    <div>
+                                        <label class="label"><span class="label-text">Quantity</span></label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            name="prescription_quantity_{{ row.drug.pk }}"
+                                            value="{{ row.quantity }}"
+                                            class="input input-bordered w-full"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label class="label"><span class="label-text">Dosage</span></label>
+                                        <input
+                                            type="text"
+                                            name="prescription_dosage_{{ row.drug.pk }}"
+                                            value="{{ row.dosage }}"
+                                            class="input input-bordered w-full"
+                                            placeholder="e.g. 500mg"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label class="label"><span class="label-text">Frequency</span></label>
+                                        <input
+                                            type="text"
+                                            name="prescription_frequency_{{ row.drug.pk }}"
+                                            value="{{ row.frequency }}"
+                                            class="input input-bordered w-full"
+                                            placeholder="e.g. Twice daily"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label class="label"><span class="label-text">Route</span></label>
+                                        <input
+                                            type="text"
+                                            name="prescription_route_{{ row.drug.pk }}"
+                                            value="{{ row.route }}"
+                                            class="input input-bordered w-full"
+                                            placeholder="e.g. Oral"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label class="label"><span class="label-text">Duration (days)</span></label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            name="prescription_duration_days_{{ row.drug.pk }}"
+                                            value="{{ row.duration_days }}"
+                                            class="input input-bordered w-full"
+                                        >
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label class="label"><span class="label-text">Instructions</span></label>
+                                        <textarea
+                                            name="prescription_instructions_{{ row.drug.pk }}"
+                                            class="textarea textarea-bordered w-full"
+                                            rows="3"
+                                            placeholder="e.g. Take after meals"
+                                        >{{ row.instructions }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
                     {% if form.selected_drugs.errors %}
                         <p class="text-error text-sm mt-1">{{ form.selected_drugs.errors|join:", " }}</p>
                     {% endif %}
@@ -237,6 +334,22 @@
             admittedCheckbox.addEventListener("change", toggleMedication);
             toggleMedication();
         }
+
+        document.querySelectorAll(".prescription-drug-checkbox").forEach(function (checkbox) {
+            function togglePrescriptionFields() {
+                const target = document.getElementById("prescription-fields-" + checkbox.dataset.drugId);
+                if (!target) return;
+
+                if (checkbox.checked) {
+                    target.classList.remove("hidden");
+                } else {
+                    target.classList.add("hidden");
+                }
+            }
+
+            checkbox.addEventListener("change", togglePrescriptionFields);
+            togglePrescriptionFields();
+        });
     });
 </script>
 {% endblock %}

@@ -122,6 +122,7 @@ def prescription_item_detail(request, pk):
             "drug",
             "consultation",
             "consultation__billing",
+            "prescribed_by",
         ),
         pk=pk,
     )

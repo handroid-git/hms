@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+
 from .forms import NotificationPreferenceForm
 from .models import Notification
 from .services import get_general_unread_notifications_count, get_or_create_notification_preference
@@ -49,7 +50,11 @@ def notification_clear_read(request):
 @login_required
 def notification_unread_count(request):
     unread_count = get_general_unread_notifications_count(request.user)
-    return JsonResponse({"unread_count": unread_count})
+    return JsonResponse(
+        {
+            "unread_count": unread_count,
+        }
+    )
 
 
 @login_required

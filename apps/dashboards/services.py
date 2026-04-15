@@ -54,6 +54,11 @@ def doctor_dashboard_data(user):
         status=LabRequestItem.Status.READY,
     ).count()
 
+    active_waiting_room_count = WaitingRoomEntry.objects.filter(
+        is_active=True,
+        status=WaitingRoomEntry.Status.WAITING,
+    ).count()
+
     return {
         "total_consulted": total_consulted,
         "consultations_today": consultations_today,
@@ -62,6 +67,7 @@ def doctor_dashboard_data(user):
         "total_bills": total_bills,
         "admissions_count": admissions_count,
         "pending_lab_reviews": pending_lab_reviews,
+        "active_waiting_room_count": active_waiting_room_count,
     }
 
 

@@ -2,7 +2,7 @@
 {% block title %}Prescription Detail{% endblock %}
 
 {% block content %}
-<div class="space-y-6 max-w-4xl mx-auto">
+<div class="space-y-6 max-w-5xl mx-auto">
     <div>
         <h1 class="text-3xl font-bold">Prescription Item</h1>
         <p class="text-base-content/70">{{ item.patient.full_name }} — {{ item.drug.name }}</p>
@@ -11,36 +11,53 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Prescription Info</h2>
+                <h2 class="card-title">Doctor Prescription</h2>
                 <p><strong>Patient:</strong> {{ item.patient.full_name }}</p>
                 <p><strong>Drug:</strong> {{ item.drug.name }}</p>
+                <p><strong>Prescribed By:</strong>
+                    {% if item.prescribed_by %}
+                        {{ item.prescribed_by.get_full_name|default:item.prescribed_by.username }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
                 <p><strong>Quantity:</strong> {{ item.quantity }}</p>
-                <p><strong>Unit Price:</strong> ₦{{ item.unit_price }}</p>
-                <p><strong>Total Price:</strong> ₦{{ item.total_price }}</p>
+                <p><strong>Dosage:</strong> {{ item.dosage|default:"-" }}</p>
+                <p><strong>Frequency:</strong> {{ item.frequency|default:"-" }}</p>
+                <p><strong>Route:</strong> {{ item.route|default:"-" }}</p>
+                <p><strong>Duration:</strong> {% if item.duration_days %}{{ item.duration_days }} day(s){% else %}-{% endif %}</p>
+                <p><strong>Instructions:</strong> {{ item.instructions|default:"-" }}</p>
                 <p><strong>Status:</strong> {{ item.get_status_display }}</p>
-                <p><strong>Payment Status:</strong> {{ item.consultation.billing.get_payment_status_display }}</p>
-                <p><strong>Amount Paid:</strong> ₦{{ item.consultation.billing.amount_paid }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
-                <h2 class="card-title">Stock Info</h2>
+                <h2 class="card-title">Billing and Stock Info</h2>
+                <p><strong>Unit Price:</strong> ₦{{ item.unit_price }}</p>
+                <p><strong>Total Price:</strong> ₦{{ item.total_price }}</p>
+                <p><strong>Payment Status:</strong> {{ item.consultation.billing.get_payment_status_display }}</p>
+                <p><strong>Amount Paid:</strong> ₦{{ item.consultation.billing.amount_paid }}</p>
+                <p><strong>Paid:</strong> {{ paid|yesno:"Yes,No" }}</p>
+                <hr class="my-2">
                 <p><strong>Stock Quantity:</strong> {{ item.drug.stock_quantity }}</p>
                 <p><strong>Low Stock Threshold:</strong> {{ item.drug.low_stock_threshold }}</p>
                 <p><strong>Expiration Date:</strong> {{ item.drug.expiration_date|default:"-" }}</p>
-                <p><strong>Paid:</strong> {{ paid|yesno:"Yes,No" }}</p>
             </div>
         </div>
     </div>
 
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
-            <h2 class="card-title">Update Prescription Item</h2>
-            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 class="card-title">Pharmacist Review</h2>
+            <p class="text-sm text-base-content/70">
+                The doctor controls dosage, frequency, route, duration, quantity, and instructions. The pharmacist only verifies and updates dispensing workflow.
+            </p>
+
+            <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 {% csrf_token %}
                 {% for field in form %}
-                    <div class="{% if field.name == 'instructions' or field.name == 'unavailable_note' %}md:col-span-2{% endif %}">
+                    <div class="{% if field.name == 'unavailable_note' %}md:col-span-2{% endif %}">
                         <label class="label"><span class="label-text">{{ field.label }}</span></label>
                         {{ field }}
                         {% if field.errors %}
@@ -49,7 +66,7 @@
                     </div>
                 {% endfor %}
                 <div class="md:col-span-2">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="submit" class="btn btn-primary">Save Review</button>
                 </div>
             </form>
         </div>

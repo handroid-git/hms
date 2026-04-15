@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Ongoing Consultations{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-wrap justify-between gap-3 items-center">
+        <div>
+            <h1 class="text-3xl font-bold">Ongoing Consultations</h1>
+            <p class="text-base-content/70">Resume any consultation that is still in progress.</p>
+        </div>
+        <a href="{% url 'doctor_dashboard' %}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Hospital Number</th>
+                            <th>Complaint</th>
+                            <th>Started</th>
+                            <th>Last Updated</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for consultation in consultations %}
+                            <tr>
+                                <td>{{ consultation.patient.full_name }}</td>
+                                <td>{{ consultation.patient.hospital_number }}</td>
+                                <td>{{ consultation.complaint|default:"-"|truncatechars:50 }}</td>
+                                <td>{{ consultation.consulted_at }}</td>
+                                <td>{{ consultation.updated_at }}</td>
+                                <td>
+                                    <a href="{% url 'consultation_detail' consultation.pk %}" class="btn btn-sm btn-primary">
+                                        Continue
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6">No ongoing consultations found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

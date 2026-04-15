@@ -75,7 +75,12 @@ class PrescriptionItem(models.Model):
     )
 
     quantity = models.PositiveIntegerField(default=1)
+    dosage = models.CharField(max_length=255, blank=True)
+    frequency = models.CharField(max_length=255, blank=True)
+    route = models.CharField(max_length=255, blank=True)
+    duration_days = models.PositiveIntegerField(null=True, blank=True)
     instructions = models.TextField(blank=True)
+
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     total_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
 
@@ -99,6 +104,19 @@ class PrescriptionItem(models.Model):
     def recalculate_total(self):
         self.total_price = self.unit_price * self.quantity
         return self.total_price
+
+    @property
+    def prescription_summary(self):
+        parts = []
+        if self.dosage:
+            parts.append(self.dosage)
+        if self.frequency:
+            parts.append(self.frequency)
+        if self.route:
+            parts.append(self.route)
+        if self.duration_days:
+            parts.append(f"{self.duration_days} day(s)")
+        return " | ".join(parts) if parts else "-"
 
     def __str__(self):
         return f"{self.patient.full_name} - {self.drug.name}"

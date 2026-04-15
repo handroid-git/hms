@@ -27,10 +27,78 @@ def sync_prescriptions_for_consultation(consultation, selected_drugs, prescribed
             )
             item.recalculate_total()
             item.save(update_fields=["total_price"])
+        else:
+            existing_item = existing_items[drug.pk]
+            if existing_item.unit_price != drug.price:
+                existing_item.unit_price = drug.price
+                existing_item.recalculate_total()
+                existing_item.save(update_fields=["unit_price", "total_price", "updated_at"])
 
     for drug_id, item in existing_items.items():
         if drug_id not in selected_drug_ids and item.status != PrescriptionItem.Status.ISSUED:
             item.delete()
+
+    update_consultation_prescription_summary(consultation)
+    update_billing_prescription_total(consultation)
+
+
+@transaction.atomic
+def update_prescription_details_from_post(consultation, post_data):
+    items = consultation.prescription_items.select_related("drug").all()
+
+    for item in items:
+        drug_key = str(item.drug_id)
+
+        dosage = (post_data.get(f"prescription_dosage_{drug_key}") or "").strip()
+        frequency = (post_data.get(f"prescription_frequency_{drug_key}") or "").strip()
+        route = (post_data.get(f"prescription_route_{drug_key}") or "").strip()
+        instructions = (post_data.get(f"prescription_instructions_{drug_key}") or "").strip()
+        quantity_raw = (post_data.get(f"prescription_quantity_{drug_key}") or "1").strip()
+        duration_raw = (post_data.get(f"prescription_duration_days_{drug_key}") or "").strip()
+
+        if not dosage:
+            raise ValueError(f"Please enter dosage for {item.drug.name}.")
+        if not frequency:
+            raise ValueError(f"Please enter frequency for {item.drug.name}.")
+
+        try:
+            quantity = int(quantity_raw)
+        except ValueError as exc:
+            raise ValueError(f"Quantity for {item.drug.name} must be a whole number.") from exc
+
+        if quantity <= 0:
+            raise ValueError(f"Quantity for {item.drug.name} must be greater than zero.")
+
+        duration_days = None
+        if duration_raw:
+            try:
+                duration_days = int(duration_raw)
+            except ValueError as exc:
+                raise ValueError(f"Duration for {item.drug.name} must be a whole number.") from exc
+            if duration_days <= 0:
+                raise ValueError(f"Duration for {item.drug.name} must be greater than zero.")
+
+        item.dosage = dosage
+        item.frequency = frequency
+        item.route = route
+        item.instructions = instructions
+        item.quantity = quantity
+        item.duration_days = duration_days
+        item.unit_price = item.drug.price
+        item.recalculate_total()
+        item.save(
+            update_fields=[
+                "dosage",
+                "frequency",
+                "route",
+                "instructions",
+                "quantity",
+                "duration_days",
+                "unit_price",
+                "total_price",
+                "updated_at",
+            ]
+        )
 
     update_consultation_prescription_summary(consultation)
     update_billing_prescription_total(consultation)

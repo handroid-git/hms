@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const notificationsUrl = appConfig.dataset.notificationsUrl || "";
     const chatUnreadUrl = appConfig.dataset.chatUnreadUrl || "";
+    const workflowSoundUrl = appConfig.dataset.workflowSoundUrl || "";
+    const chatSoundUrl = appConfig.dataset.chatSoundUrl || "";
     const isAuthenticated = appConfig.dataset.isAuthenticated === "true";
     const isDashboardPage = appConfig.dataset.isDashboardPage === "true";
     const dashboardIdentityLabel = appConfig.dataset.dashboardIdentityLabel || "";
@@ -41,52 +43,104 @@ document.addEventListener("DOMContentLoaded", function () {
     let lastUnreadNotificationCount = parseInt(appConfig.dataset.unreadNotificationsCount || "0", 10);
     let lastUnreadChatCount = parseInt(appConfig.dataset.unreadChatCount || "0", 10);
 
+    let audioUnlocked = false;
+    let workflowAudio = null;
+    let chatAudio = null;
+
+    function createAudio(url) {
+        if (!url) return null;
+        const audio = new Audio(url);
+        audio.preload = "auto";
+        return audio;
+    }
+
+    workflowAudio = createAudio(workflowSoundUrl);
+    chatAudio = createAudio(chatSoundUrl);
+
+    function unlockAudio() {
+        audioUnlocked = true;
+
+        const unlockList = [workflowAudio, chatAudio].filter(Boolean);
+        unlockList.forEach(function (audio) {
+            try {
+                audio.volume = 1;
+                const playPromise = audio.play();
+                if (playPromise && typeof playPromise.then === "function") {
+                    playPromise
+                        .then(function () {
+                            audio.pause();
+                            audio.currentTime = 0;
+                        })
+                        .catch(function () {
+                            // silent
+                        });
+                }
+            } catch (error) {
+                console.error("Audio unlock failed:", error);
+            }
+        });
+
+        document.removeEventListener("click", unlockAudio);
+        document.removeEventListener("touchstart", unlockAudio);
+        document.removeEventListener("keydown", unlockAudio);
+    }
+
+    document.addEventListener("click", unlockAudio, { once: true });
+    document.addEventListener("touchstart", unlockAudio, { once: true });
+    document.addEventListener("keydown", unlockAudio, { once: true });
+
+    function playNotificationSound(audio) {
+        if (!audio || !audioUnlocked) return;
+
+        try {
+            audio.pause();
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(function () {
+                    // silent
+                });
+            }
+        } catch (error) {
+            console.error("Notification sound failed:", error);
+        }
+    }
+
+    function showWorkflowBellButton(unreadCount) {
+        if (!notificationBellLink) return;
+
+        if (unreadCount > 0) {
+            notificationBellLink.classList.remove("hidden");
+            notificationBellLink.classList.add("btn", "btn-sm", "btn-outline", "text-white", "border-white", "hover:bg-blue-700", "relative");
+        } else {
+            notificationBellLink.classList.add("hidden");
+        }
+    }
+
+    function updateNotificationBadgeElement(element, unreadCount) {
+        if (!element) return;
+
+        if (unreadCount > 0) {
+            element.textContent = unreadCount;
+            element.classList.remove("hidden");
+            element.classList.add("animate-pulse");
+        } else {
+            element.textContent = "0";
+            element.classList.add("hidden");
+            element.classList.remove("animate-pulse");
+        }
+    }
+
     function updateNotificationUI(unreadCount) {
-        if (notificationBellLink) {
-            if (unreadCount > 0) {
-                notificationBellLink.classList.remove("hidden");
-                notificationBellLink.classList.add(
-                    "btn",
-                    "btn-sm",
-                    "btn-outline",
-                    "text-white",
-                    "border-white",
-                    "hover:bg-blue-700",
-                    "relative"
-                );
-            } else {
-                notificationBellLink.classList.add("hidden");
-            }
-        }
-
-        if (notificationBadge) {
-            if (unreadCount > 0) {
-                notificationBadge.textContent = unreadCount;
-                notificationBadge.classList.remove("hidden");
-                notificationBadge.classList.add("animate-pulse");
-            } else {
-                notificationBadge.textContent = "0";
-                notificationBadge.classList.add("hidden");
-                notificationBadge.classList.remove("animate-pulse");
-            }
-        }
-
-        if (sidebarNotificationBadge) {
-            if (unreadCount > 0) {
-                sidebarNotificationBadge.textContent = unreadCount;
-                sidebarNotificationBadge.classList.remove("hidden");
-                sidebarNotificationBadge.classList.add("animate-pulse");
-            } else {
-                sidebarNotificationBadge.textContent = "0";
-                sidebarNotificationBadge.classList.add("hidden");
-                sidebarNotificationBadge.classList.remove("animate-pulse");
-            }
-        }
+        showWorkflowBellButton(unreadCount);
+        updateNotificationBadgeElement(notificationBadge, unreadCount);
+        updateNotificationBadgeElement(sidebarNotificationBadge, unreadCount);
 
         if (notificationBell && unreadCount > lastUnreadNotificationCount) {
             notificationBell.classList.remove("bell-shake");
             void notificationBell.offsetWidth;
             notificationBell.classList.add("bell-shake");
+            playNotificationSound(workflowAudio);
         }
 
         lastUnreadNotificationCount = unreadCount;
@@ -122,6 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (unreadChatCount > lastUnreadChatCount) {
             restartMailAnimation(floatingChatIcon);
             restartMailAnimation(sidebarChatIcon);
+            playNotificationSound(chatAudio);
         }
 
         lastUnreadChatCount = unreadChatCount;
@@ -154,7 +209,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(notificationsUrl, {
                 headers: {
                     "X-Requested-With": "XMLHttpRequest"
-                }
+                },
+                cache: "no-store"
             });
 
             if (!response.ok) return;
@@ -173,7 +229,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(chatUnreadUrl, {
                 headers: {
                     "X-Requested-With": "XMLHttpRequest"
-                }
+                },
+                cache: "no-store"
             });
 
             if (!response.ok) return;
@@ -190,6 +247,9 @@ document.addEventListener("DOMContentLoaded", function () {
     updateChatUI(lastUnreadChatCount);
 
     if (isAuthenticated) {
+        pollNotifications();
+        pollChatUnread();
+
         setInterval(pollNotifications, 5000);
         setInterval(pollChatUnread, 3000);
         setInterval(updateDashboardGreeting, 30000);

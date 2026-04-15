@@ -1,0 +1,14 @@
+<tbody>
+    {% for item in pending_items %}
+        <tr>
+            <td>{{ item.patient.full_name }}</td>
+            <td>{{ item.drug.name }}</td>
+            <td>{{ item.get_status_display }}</td>
+            <td>
+                <a href="{% url 'prescription_item_detail' item.pk %}" class="btn btn-sm btn-outline">Open</a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="4">No pending pharmacy work.</td></tr>
+    {% endfor %}
+</tbody>

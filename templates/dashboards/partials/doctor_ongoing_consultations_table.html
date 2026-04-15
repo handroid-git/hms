@@ -1,0 +1,17 @@
+<tbody>
+    {% for consultation in ongoing_consultations %}
+        <tr>
+            <td>{{ consultation.patient.full_name }}</td>
+            <td>{{ consultation.patient.hospital_number }}</td>
+            <td>{{ consultation.get_status_display }}</td>
+            <td>{{ consultation.updated_at }}</td>
+            <td>
+                <a href="{% url 'consultation_detail' consultation.pk %}" class="btn btn-sm btn-primary">
+                    Continue
+                </a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5">No ongoing consultations.</td></tr>
+    {% endfor %}
+</tbody>

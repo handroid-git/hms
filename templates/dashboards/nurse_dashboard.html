@@ -3,7 +3,7 @@
 {% block title %}Nurse Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-8" data-dashboard-live="nurse" data-live-url="{% url 'nurse_dashboard_live' %}">
     <div>
         <h1 class="text-3xl font-bold">Nurse Dashboard</h1>
         <p class="text-base-content/70">
@@ -15,28 +15,28 @@
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Total Patients Created</p>
-                <h2 class="text-3xl font-bold">{{ data.total_patients_created }}</h2>
+                <h2 id="nurse-total-patients-created" class="text-3xl font-bold">{{ data.total_patients_created }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Patients Created Today</p>
-                <h2 class="text-3xl font-bold">{{ data.patients_created_today }}</h2>
+                <h2 id="nurse-patients-created-today" class="text-3xl font-bold">{{ data.patients_created_today }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Patients Created This Month</p>
-                <h2 class="text-3xl font-bold">{{ data.patients_created_month }}</h2>
+                <h2 id="nurse-patients-created-month" class="text-3xl font-bold">{{ data.patients_created_month }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Total Triage Entries</p>
-                <h2 class="text-3xl font-bold">{{ data.total_triaged }}</h2>
+                <h2 id="nurse-total-triaged" class="text-3xl font-bold">{{ data.total_triaged }}</h2>
             </div>
         </div>
     </div>
@@ -45,28 +45,28 @@
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Triaged Today</p>
-                <h2 class="text-3xl font-bold">{{ data.triaged_today }}</h2>
+                <h2 id="nurse-triaged-today" class="text-3xl font-bold">{{ data.triaged_today }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <p class="text-sm text-warning">Active Waiting Room</p>
-                <h2 class="text-3xl font-bold text-warning">{{ data.active_waiting_room_count }}</h2>
+                <h2 id="nurse-active-waiting-room" class="text-3xl font-bold text-warning">{{ data.active_waiting_room_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">My Active Waiting Entries</p>
-                <h2 class="text-3xl font-bold">{{ data.my_active_waiting_room_count }}</h2>
+                <h2 id="nurse-my-active-waiting" class="text-3xl font-bold">{{ data.my_active_waiting_room_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-error">
             <div class="card-body">
                 <p class="text-sm text-error">Discharge Confirmations Pending</p>
-                <h2 class="text-3xl font-bold text-error">{{ data.discharge_pending_count }}</h2>
+                <h2 id="nurse-discharge-pending" class="text-3xl font-bold text-error">{{ data.discharge_pending_count }}</h2>
             </div>
         </div>
     </div>
@@ -115,7 +115,7 @@
                 <p class="text-sm text-base-content/70">
                     Outstanding balances that may affect waiting-room decisions and follow-up workflow.
                 </p>
-                <h3 class="text-3xl font-bold mt-2">₦{{ data.outstanding_patient_balances }}</h3>
+                <h3 id="nurse-outstanding-balances" class="text-3xl font-bold mt-2">₦{{ data.outstanding_patient_balances }}</h3>
             </div>
         </div>
     </div>
@@ -143,4 +143,40 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const root = document.querySelector('[data-dashboard-live="nurse"]');
+    if (!root) return;
+
+    const url = root.dataset.liveUrl;
+
+    async function refreshNurseDashboard() {
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            document.getElementById("nurse-total-patients-created").textContent = data.total_patients_created;
+            document.getElementById("nurse-patients-created-today").textContent = data.patients_created_today;
+            document.getElementById("nurse-patients-created-month").textContent = data.patients_created_month;
+            document.getElementById("nurse-total-triaged").textContent = data.total_triaged;
+            document.getElementById("nurse-triaged-today").textContent = data.triaged_today;
+            document.getElementById("nurse-active-waiting-room").textContent = data.active_waiting_room_count;
+            document.getElementById("nurse-my-active-waiting").textContent = data.my_active_waiting_room_count;
+            document.getElementById("nurse-discharge-pending").textContent = data.discharge_pending_count;
+            document.getElementById("nurse-outstanding-balances").textContent = "₦" + data.outstanding_patient_balances;
+        } catch (error) {
+            console.error("Nurse dashboard refresh failed:", error);
+        }
+    }
+
+    refreshNurseDashboard();
+    setInterval(refreshNurseDashboard, 10000);
+})();
+</script>
 {% endblock %}

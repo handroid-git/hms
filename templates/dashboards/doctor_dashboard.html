@@ -3,11 +3,11 @@
 {% block title %}Doctor Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
+<div class="space-y-8" data-dashboard-live="doctor" data-live-url="{% url 'doctor_dashboard_live' %}">
     <div>
         <h1 class="text-3xl font-bold">Doctor Dashboard</h1>
         <p class="text-base-content/70">
-            Consultation performance, billing impact, admissions, and pending lab reviews.
+            Consultation performance, billing impact, admissions, pending lab reviews, waiting room visibility, and ongoing consultations.
         </p>
     </div>
 
@@ -15,51 +15,95 @@
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Total Patients Consulted</p>
-                <h2 class="text-3xl font-bold">{{ data.total_consulted }}</h2>
+                <h2 id="doctor-total-consulted" class="text-3xl font-bold">{{ data.total_consulted }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Consultations Today</p>
-                <h2 class="text-3xl font-bold">{{ data.consultations_today }}</h2>
+                <h2 id="doctor-consultations-today" class="text-3xl font-bold">{{ data.consultations_today }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Consultations This Month</p>
-                <h2 class="text-3xl font-bold">{{ data.consultations_month }}</h2>
+                <h2 id="doctor-consultations-month" class="text-3xl font-bold">{{ data.consultations_month }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Average Consultations / Day</p>
-                <h2 class="text-3xl font-bold">{{ data.avg_per_day }}</h2>
+                <h2 id="doctor-avg-per-day" class="text-3xl font-bold">{{ data.avg_per_day }}</h2>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Total Bills Generated</p>
-                <h2 class="text-2xl font-bold">₦{{ data.total_bills }}</h2>
+                <h2 id="doctor-total-bills" class="text-2xl font-bold">₦{{ data.total_bills }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <p class="text-sm text-base-content/70">Admissions</p>
-                <h2 class="text-2xl font-bold">{{ data.admissions_count }}</h2>
+                <h2 id="doctor-admissions-count" class="text-2xl font-bold">{{ data.admissions_count }}</h2>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <p class="text-sm text-warning">Pending Lab Reviews</p>
-                <h2 class="text-2xl font-bold text-warning">{{ data.pending_lab_reviews }}</h2>
+                <h2 id="doctor-pending-lab-reviews" class="text-2xl font-bold text-warning">{{ data.pending_lab_reviews }}</h2>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm border border-secondary">
+            <div class="card-body">
+                <p class="text-sm text-secondary">Patients in Waiting Room</p>
+                <h2 id="doctor-active-waiting-room" class="text-2xl font-bold text-secondary">{{ data.active_waiting_room_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-info">
+            <div class="card-body">
+                <p class="text-sm text-info">Ongoing Consultations</p>
+                <h2 id="doctor-ongoing-count" class="text-2xl font-bold text-info">{{ ongoing_consultations_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="card-title">Ongoing Consultations</h2>
+                <a href="{% url 'doctor_ongoing_consultations' %}" class="btn btn-outline btn-sm">
+                    View All Ongoing
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Hospital Number</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="doctor-ongoing-consultations-body">
+                        {% include "dashboards/partials/doctor_ongoing_consultations_table.html" with ongoing_consultations=ongoing_consultations %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -70,6 +114,12 @@
             <div class="flex flex-wrap gap-3">
                 <a href="{% url 'doctor_consultation_start' %}" class="btn btn-primary">
                     Start Consultation
+                </a>
+                <a href="{% url 'doctor_ongoing_consultations' %}" class="btn btn-outline">
+                    Ongoing Consultations
+                </a>
+                <a href="{% url 'waiting_room_list' %}" class="btn btn-outline">
+                    View Waiting Room
                 </a>
                 <a href="{% url 'appointment_list' %}" class="btn btn-outline">
                     View Appointments
@@ -84,4 +134,41 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const root = document.querySelector('[data-dashboard-live="doctor"]');
+    if (!root) return;
+
+    const url = root.dataset.liveUrl;
+
+    async function refreshDoctorDashboard() {
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            document.getElementById("doctor-total-consulted").textContent = data.total_consulted;
+            document.getElementById("doctor-consultations-today").textContent = data.consultations_today;
+            document.getElementById("doctor-consultations-month").textContent = data.consultations_month;
+            document.getElementById("doctor-avg-per-day").textContent = data.avg_per_day;
+            document.getElementById("doctor-total-bills").textContent = "₦" + data.total_bills;
+            document.getElementById("doctor-admissions-count").textContent = data.admissions_count;
+            document.getElementById("doctor-pending-lab-reviews").textContent = data.pending_lab_reviews;
+            document.getElementById("doctor-active-waiting-room").textContent = data.active_waiting_room_count;
+            document.getElementById("doctor-ongoing-count").textContent = data.ongoing_consultations_count;
+            document.getElementById("doctor-ongoing-consultations-body").innerHTML = data.ongoing_html;
+        } catch (error) {
+            console.error("Doctor dashboard refresh failed:", error);
+        }
+    }
+
+    refreshDoctorDashboard();
+    setInterval(refreshDoctorDashboard, 10000);
+})();
+</script>
 {% endblock %}

@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+
 from .forms import MessageForm, StartConversationForm
 from .models import Conversation, Message
 from .services import get_or_create_direct_conversation, mark_conversation_read, send_message

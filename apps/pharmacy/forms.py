@@ -30,19 +30,11 @@ class DrugForm(forms.ModelForm):
 class PrescriptionItemUpdateForm(forms.ModelForm):
     class Meta:
         model = PrescriptionItem
-        fields = ["status", "unavailable_note", "instructions", "quantity"]
+        fields = ["status", "unavailable_note"]
         widgets = {
             "status": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "unavailable_note": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
-            "instructions": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 3}),
-            "quantity": forms.NumberInput(attrs={"class": "input input-bordered w-full", "min": "1"}),
         }
-
-    def clean_quantity(self):
-        quantity = self.cleaned_data["quantity"]
-        if quantity <= 0:
-            raise forms.ValidationError("Quantity must be greater than zero.")
-        return quantity
 
 
 class DrugIssueForm(forms.Form):

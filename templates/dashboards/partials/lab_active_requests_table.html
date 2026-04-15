@@ -1,0 +1,23 @@
+<tbody>
+    {% for request_item in active_requests %}
+        <tr>
+            <td>{{ request_item.patient.full_name }}</td>
+            <td>{{ request_item.get_status_display }}</td>
+            <td>
+                {% if request_item.consultation.billing %}
+                    {{ request_item.consultation.billing.get_payment_status_display }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ request_item.updated_at }}</td>
+            <td>
+                <a href="{% url 'lab_request_detail' request_item.pk %}" class="btn btn-sm btn-outline">
+                    Open
+                </a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5">No active lab requests.</td></tr>
+    {% endfor %}
+</tbody>

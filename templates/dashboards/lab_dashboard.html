@@ -2,100 +2,98 @@
 {% block title %}Lab Dashboard{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" data-dashboard-live="lab" data-live-url="{% url 'lab_dashboard_live' %}">
     <div>
         <h1 class="text-3xl font-bold">Lab Dashboard</h1>
         <p class="text-base-content/70">Manage lab requests, upload results, and monitor laboratory activity.</p>
     </div>
 
-    {% if low_stock_tests %}
-        <div class="alert alert-warning shadow-sm">
-            <span>Some lab tests are low in stock.</span>
-        </div>
-    {% endif %}
+    <div id="lab-low-stock-alert" class="{% if not low_stock_tests %}hidden {% endif %}alert alert-warning shadow-sm">
+        <span>Some lab tests are low in stock.</span>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Completed Today</h2>
-                <p class="text-3xl font-bold">{{ completed_today }}</p>
+                <p id="lab-completed-today" class="text-3xl font-bold">{{ completed_today }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">All-Time Completed</h2>
-                <p class="text-3xl font-bold">{{ completed_all_time }}</p>
+                <p id="lab-completed-all-time" class="text-3xl font-bold">{{ completed_all_time }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Available Lab Tests</h2>
-                <p class="text-3xl font-bold">{{ data.available_tests }}</p>
+                <p id="lab-available-tests" class="text-3xl font-bold">{{ data.available_tests }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-info">
             <div class="card-body">
                 <h2 class="card-title text-lg text-info">Tests Completed Today</h2>
-                <p class="text-3xl font-bold text-info">{{ data.tests_today }}</p>
+                <p id="lab-tests-today" class="text-3xl font-bold text-info">{{ data.tests_today }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Tests Completed This Month</h2>
-                <p class="text-3xl font-bold">{{ data.tests_month }}</p>
+                <p id="lab-tests-month" class="text-3xl font-bold">{{ data.tests_month }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">All-Time Accepted Tests</h2>
-                <p class="text-3xl font-bold">{{ data.tests_total }}</p>
+                <p id="lab-tests-total" class="text-3xl font-bold">{{ data.tests_total }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <h2 class="card-title text-lg text-warning">Pending Tests</h2>
-                <p class="text-3xl font-bold text-warning">{{ data.pending_tests }}</p>
+                <p id="lab-pending-tests" class="text-3xl font-bold text-warning">{{ data.pending_tests }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <h2 class="card-title text-lg text-warning">Rejected Tests</h2>
-                <p class="text-3xl font-bold text-warning">{{ data.rejected_tests }}</p>
+                <p id="lab-rejected-tests" class="text-3xl font-bold text-warning">{{ data.rejected_tests }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-error">
             <div class="card-body">
                 <h2 class="card-title text-lg text-error">Unavailable Tests</h2>
-                <p class="text-3xl font-bold text-error">{{ data.unavailable_tests }}</p>
+                <p id="lab-unavailable-tests" class="text-3xl font-bold text-error">{{ data.unavailable_tests }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-warning">
             <div class="card-body">
                 <h2 class="card-title text-lg text-warning">Low Stock Tests</h2>
-                <p class="text-3xl font-bold text-warning">{{ data.low_stock_tests_count }}</p>
+                <p id="lab-low-stock-count" class="text-3xl font-bold text-warning">{{ data.low_stock_tests_count }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm border border-error">
             <div class="card-body">
                 <h2 class="card-title text-lg text-error">Out of Stock Tests</h2>
-                <p class="text-3xl font-bold text-error">{{ data.out_of_stock_tests_count }}</p>
+                <p id="lab-out-of-stock-count" class="text-3xl font-bold text-error">{{ data.out_of_stock_tests_count }}</p>
             </div>
         </div>
 
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Restocks Today</h2>
-                <p class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
+                <p id="lab-restocks-today" class="text-3xl font-bold">{{ data.recent_restock_count }}</p>
             </div>
         </div>
     </div>
@@ -114,28 +112,8 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for request_item in active_requests %}
-                            <tr>
-                                <td>{{ request_item.patient.full_name }}</td>
-                                <td>{{ request_item.get_status_display }}</td>
-                                <td>
-                                    {% if request_item.consultation.billing %}
-                                        {{ request_item.consultation.billing.get_payment_status_display }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>{{ request_item.updated_at }}</td>
-                                <td>
-                                    <a href="{% url 'lab_request_detail' request_item.pk %}" class="btn btn-sm btn-outline">
-                                        Open
-                                    </a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="5">No active lab requests.</td></tr>
-                        {% endfor %}
+                    <tbody id="lab-active-requests-body">
+                        {% include "dashboards/partials/lab_active_requests_table.html" with active_requests=active_requests %}
                     </tbody>
                 </table>
             </div>
@@ -156,28 +134,8 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for item in pending_items %}
-                            <tr>
-                                <td>{{ item.lab_request.patient.full_name }}</td>
-                                <td>{{ item.lab_test.name }}</td>
-                                <td>{{ item.get_status_display }}</td>
-                                <td>
-                                    {% if item.lab_request.consultation.doctor %}
-                                        {{ item.lab_request.consultation.doctor.get_full_name|default:item.lab_request.consultation.doctor.username }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'lab_result_update' item.pk %}" class="btn btn-sm btn-outline">
-                                        Open
-                                    </a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="5">No pending lab work.</td></tr>
-                        {% endfor %}
+                    <tbody id="lab-pending-items-body">
+                        {% include "dashboards/partials/lab_pending_items_table.html" with pending_items=pending_items %}
                     </tbody>
                 </table>
             </div>
@@ -259,4 +217,52 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const root = document.querySelector('[data-dashboard-live="lab"]');
+    if (!root) return;
+
+    const url = root.dataset.liveUrl;
+
+    async function refreshLabDashboard() {
+        try {
+            const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            document.getElementById("lab-completed-today").textContent = data.completed_today;
+            document.getElementById("lab-completed-all-time").textContent = data.completed_all_time;
+            document.getElementById("lab-available-tests").textContent = data.available_tests;
+            document.getElementById("lab-tests-today").textContent = data.tests_today;
+            document.getElementById("lab-tests-month").textContent = data.tests_month;
+            document.getElementById("lab-tests-total").textContent = data.tests_total;
+            document.getElementById("lab-pending-tests").textContent = data.pending_tests;
+            document.getElementById("lab-rejected-tests").textContent = data.rejected_tests;
+            document.getElementById("lab-unavailable-tests").textContent = data.unavailable_tests;
+            document.getElementById("lab-low-stock-count").textContent = data.low_stock_tests_count;
+            document.getElementById("lab-out-of-stock-count").textContent = data.out_of_stock_tests_count;
+            document.getElementById("lab-restocks-today").textContent = data.recent_restock_count;
+            document.getElementById("lab-active-requests-body").innerHTML = data.active_requests_html;
+            document.getElementById("lab-pending-items-body").innerHTML = data.pending_items_html;
+
+            const alertBox = document.getElementById("lab-low-stock-alert");
+            if (data.show_low_stock_alert) {
+                alertBox.classList.remove("hidden");
+            } else {
+                alertBox.classList.add("hidden");
+            }
+        } catch (error) {
+            console.error("Lab dashboard refresh failed:", error);
+        }
+    }
+
+    refreshLabDashboard();
+    setInterval(refreshLabDashboard, 10000);
+})();
+</script>
 {% endblock %}
