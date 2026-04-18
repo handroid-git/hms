@@ -1,10 +1,12 @@
 import uuid
 from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from apps.patients.models import Patient
+
 from apps.consultations.models import Consultation
+from apps.patients.models import Patient
 
 
 class Billing(models.Model):
@@ -43,6 +45,7 @@ class Billing(models.Model):
     )
 
     consultation_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    e_card_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     lab_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     prescription_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     medication_total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
@@ -72,6 +75,7 @@ class Billing(models.Model):
 
         self.total_amount = (
             self.consultation_fee
+            + self.e_card_fee
             + self.lab_total
             + self.prescription_total
             + self.medication_total
@@ -110,7 +114,11 @@ class Billing(models.Model):
     def can_edit_archived_amounts(self):
         if not self.is_archived:
             return True
-        return self.payment_status in [self.PaymentStatus.UNPAID, self.PaymentStatus.PART_PAYMENT, self.PaymentStatus.DEPOSIT]
+        return self.payment_status in [
+            self.PaymentStatus.UNPAID,
+            self.PaymentStatus.PART_PAYMENT,
+            self.PaymentStatus.DEPOSIT,
+        ]
 
     def archive(self, user=None):
         self.is_archived = True
@@ -138,7 +146,15 @@ class BillingExtraItem(models.Model):
         null=True,
         related_name="billing_extra_items_created",
     )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="billing_extra_items_updated",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title} - {self.billing.patient.full_name}"

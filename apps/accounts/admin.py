@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+
 from .models import User
 
 
@@ -22,6 +23,7 @@ class CustomUserAdmin(UserAdmin):
         "email",
         "role",
         "employee_id",
+        "doctor_consultation_fee",
         "is_available_for_appointments",
         "verification_status",
         "is_verified_staff",
@@ -52,6 +54,7 @@ class CustomUserAdmin(UserAdmin):
                     "shift_end",
                     "shift_days",
                     "is_available_for_appointments",
+                    "doctor_consultation_fee",
                 )
             },
         ),

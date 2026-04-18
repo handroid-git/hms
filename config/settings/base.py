@@ -74,6 +74,7 @@ TEMPLATES = [
                 "apps.notifications.context_processors.notification_counts",
                 "apps.chat.context_processors.chat_counts",
                 "apps.accounts.context_processors.dashboard_identity",
+                "apps.core.context_processors.hospital_identity",
             ],
         },
     },
@@ -83,9 +84,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 

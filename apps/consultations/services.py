@@ -1,10 +1,13 @@
 from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
+
 from apps.billing.models import Billing
 from apps.billing.services import get_patient_outstanding_balance
 from apps.patients.models import Patient, PatientRecord
 from apps.waiting_room.models import WaitingRoomEntry
+
 from .models import Consultation
 
 DEFAULT_CONSULTATION_FEE = Decimal("5000.00")
@@ -91,11 +94,17 @@ def start_consultation_for_next_patient(doctor):
     entry.status = WaitingRoomEntry.Status.IN_CONSULTATION
     entry.save(update_fields=["status"])
 
+    doctor_consultation_fee = getattr(
+        doctor,
+        "doctor_consultation_fee",
+        DEFAULT_CONSULTATION_FEE,
+    ) or DEFAULT_CONSULTATION_FEE
+
     consultation = Consultation.objects.create(
         patient=entry.patient,
         waiting_room_entry=entry,
         doctor=doctor,
-        consultation_fee=DEFAULT_CONSULTATION_FEE,
+        consultation_fee=doctor_consultation_fee,
         status=Consultation.Status.IN_PROGRESS,
     )
 
@@ -105,7 +114,8 @@ def start_consultation_for_next_patient(doctor):
         patient=entry.patient,
         consultation=consultation,
         created_by=doctor,
-        consultation_fee=DEFAULT_CONSULTATION_FEE,
+        consultation_fee=doctor_consultation_fee,
+        e_card_fee=Decimal("0.00"),
         brought_forward_balance=brought_forward_balance,
     )
     billing.recalculate_total()

@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.models import Role
 from apps.laboratory.services import sync_lab_requests_for_consultation
-from apps.pharmacy.models import Drug, PrescriptionItem
+from apps.pharmacy.models import Drug
 from apps.pharmacy.services import (
     sync_prescriptions_for_consultation,
     update_prescription_details_from_post,
@@ -18,6 +18,10 @@ from .services import (
     start_consultation_for_next_patient,
     update_consultation_billing,
 )
+
+
+def _can_access_doctor_consultation_area(user):
+    return user.role in [Role.DOCTOR, Role.ADMIN] or user.is_superuser
 
 
 def _build_prescription_rows(consultation, request=None):
@@ -38,12 +42,42 @@ def _build_prescription_rows(consultation, request=None):
             {
                 "drug": drug,
                 "selected": str(drug.pk) in selected_drug_ids,
-                "quantity": request.POST.get(f"prescription_quantity_{drug.pk}", getattr(existing, "quantity", 1)) if request and request.method == "POST" else getattr(existing, "quantity", 1),
-                "dosage": request.POST.get(f"prescription_dosage_{drug.pk}", getattr(existing, "dosage", "")) if request and request.method == "POST" else getattr(existing, "dosage", ""),
-                "frequency": request.POST.get(f"prescription_frequency_{drug.pk}", getattr(existing, "frequency", "")) if request and request.method == "POST" else getattr(existing, "frequency", ""),
-                "route": request.POST.get(f"prescription_route_{drug.pk}", getattr(existing, "route", "")) if request and request.method == "POST" else getattr(existing, "route", ""),
-                "duration_days": request.POST.get(f"prescription_duration_days_{drug.pk}", getattr(existing, "duration_days", "")) if request and request.method == "POST" else (getattr(existing, "duration_days", "") or ""),
-                "instructions": request.POST.get(f"prescription_instructions_{drug.pk}", getattr(existing, "instructions", "")) if request and request.method == "POST" else getattr(existing, "instructions", ""),
+                "quantity": request.POST.get(
+                    f"prescription_quantity_{drug.pk}",
+                    getattr(existing, "quantity", 1),
+                )
+                if request and request.method == "POST"
+                else getattr(existing, "quantity", 1),
+                "dosage": request.POST.get(
+                    f"prescription_dosage_{drug.pk}",
+                    getattr(existing, "dosage", ""),
+                )
+                if request and request.method == "POST"
+                else getattr(existing, "dosage", ""),
+                "frequency": request.POST.get(
+                    f"prescription_frequency_{drug.pk}",
+                    getattr(existing, "frequency", ""),
+                )
+                if request and request.method == "POST"
+                else getattr(existing, "frequency", ""),
+                "route": request.POST.get(
+                    f"prescription_route_{drug.pk}",
+                    getattr(existing, "route", ""),
+                )
+                if request and request.method == "POST"
+                else getattr(existing, "route", ""),
+                "duration_days": request.POST.get(
+                    f"prescription_duration_days_{drug.pk}",
+                    getattr(existing, "duration_days", ""),
+                )
+                if request and request.method == "POST"
+                else (getattr(existing, "duration_days", "") or ""),
+                "instructions": request.POST.get(
+                    f"prescription_instructions_{drug.pk}",
+                    getattr(existing, "instructions", ""),
+                )
+                if request and request.method == "POST"
+                else getattr(existing, "instructions", ""),
             }
         )
     return rows
@@ -51,15 +85,15 @@ def _build_prescription_rows(consultation, request=None):
 
 @login_required
 def doctor_consultation_start(request):
-    if request.user.role != Role.DOCTOR:
-        messages.error(request, "Only doctors can start consultations.")
+    if not _can_access_doctor_consultation_area(request.user):
+        messages.error(request, "Only doctors or admins can start consultations.")
         return redirect("dashboard_redirect")
 
     consultation = start_consultation_for_next_patient(request.user)
 
     if consultation is None:
         messages.warning(request, "No patients are currently waiting.")
-        return redirect("doctor_dashboard")
+        return redirect("doctor_dashboard" if request.user.role == Role.DOCTOR else "admin_dashboard")
 
     messages.success(request, "Consultation started successfully.")
     return redirect("consultation_detail", pk=consultation.pk)
@@ -67,18 +101,23 @@ def doctor_consultation_start(request):
 
 @login_required
 def doctor_ongoing_consultations(request):
-    if request.user.role != Role.DOCTOR:
-        messages.error(request, "Only doctors can access ongoing consultations.")
+    if not _can_access_doctor_consultation_area(request.user):
+        messages.error(request, "Only doctors or admins can access ongoing consultations.")
         return redirect("dashboard_redirect")
 
     consultations = Consultation.objects.select_related(
         "patient",
         "waiting_room_entry",
+        "doctor",
     ).filter(
-        doctor=request.user,
         status=Consultation.Status.IN_PROGRESS,
         complete=False,
-    ).order_by("-updated_at")
+    )
+
+    if request.user.role == Role.DOCTOR and not request.user.is_superuser:
+        consultations = consultations.filter(doctor=request.user)
+
+    consultations = consultations.order_by("-updated_at")
 
     return render(
         request,
@@ -92,7 +131,11 @@ def doctor_ongoing_consultations(request):
 @login_required
 def consultation_detail(request, pk):
     consultation = get_object_or_404(
-        Consultation.objects.select_related("patient", "doctor", "waiting_room_entry").prefetch_related(
+        Consultation.objects.select_related(
+            "patient",
+            "doctor",
+            "waiting_room_entry",
+        ).prefetch_related(
             "prescription_items__drug",
             "lab_requests__items__lab_test",
             "lab_requests__items__attachments",
@@ -100,11 +143,16 @@ def consultation_detail(request, pk):
         pk=pk,
     )
 
-    if request.user.role != Role.DOCTOR:
-        messages.error(request, "Only doctors can access consultations.")
+    if not _can_access_doctor_consultation_area(request.user):
+        messages.error(request, "Only doctors or admins can access consultations.")
         return redirect("dashboard_redirect")
 
-    if consultation.doctor_id and consultation.doctor_id != request.user.id:
+    if (
+        request.user.role == Role.DOCTOR
+        and consultation.doctor_id
+        and consultation.doctor_id != request.user.id
+        and not request.user.is_superuser
+    ):
         messages.error(request, "You can only access consultations assigned to you.")
         return redirect("doctor_dashboard")
 
@@ -112,7 +160,10 @@ def consultation_detail(request, pk):
     if consultation.waiting_room_entry and hasattr(consultation.waiting_room_entry, "triage_record"):
         triage_record = consultation.waiting_room_entry.triage_record
 
-    lab_request = consultation.lab_requests.prefetch_related("items__lab_test", "items__attachments").first()
+    lab_request = consultation.lab_requests.prefetch_related(
+        "items__lab_test",
+        "items__attachments",
+    ).first()
     prescription_items = consultation.prescription_items.select_related("drug").all()
 
     if request.method == "POST":
@@ -156,11 +207,16 @@ def consultation_detail(request, pk):
 def consultation_complete_view(request, pk):
     consultation = get_object_or_404(Consultation, pk=pk)
 
-    if request.user.role != Role.DOCTOR:
-        messages.error(request, "Only doctors can complete consultations.")
+    if not _can_access_doctor_consultation_area(request.user):
+        messages.error(request, "Only doctors or admins can complete consultations.")
         return redirect("dashboard_redirect")
 
-    if consultation.doctor_id and consultation.doctor_id != request.user.id:
+    if (
+        request.user.role == Role.DOCTOR
+        and consultation.doctor_id
+        and consultation.doctor_id != request.user.id
+        and not request.user.is_superuser
+    ):
         messages.error(request, "You can only complete consultations assigned to you.")
         return redirect("doctor_dashboard")
 
@@ -170,4 +226,7 @@ def consultation_complete_view(request, pk):
 
     complete_consultation(consultation)
     messages.success(request, "Consultation marked as complete and added to medical history.")
+
+    if request.user.role == Role.ADMIN or request.user.is_superuser:
+        return redirect("doctor_ongoing_consultations")
     return redirect("doctor_dashboard")

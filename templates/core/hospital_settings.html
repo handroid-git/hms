@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Hospital Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-3xl">Hospital Administration Settings</h1>
+            <p class="text-base-content/70">
+                Manage hospital identity, operational defaults, retention settings, and backup guidance.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Edit Hospital Settings</h2>
+
+                <form method="post" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% csrf_token %}
+
+                    <div>
+                        <label class="label"><span class="label-text">Hospital Name</span></label>
+                        {{ form.hospital_name }}
+                        {% if form.hospital_name.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_name.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Short Name</span></label>
+                        {{ form.short_name }}
+                        {% if form.short_name.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.short_name.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Hospital Address</span></label>
+                        {{ form.hospital_address }}
+                        {% if form.hospital_address.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_address.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Hospital Phone</span></label>
+                        {{ form.hospital_phone }}
+                        {% if form.hospital_phone.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_phone.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Hospital Email</span></label>
+                        {{ form.hospital_email }}
+                        {% if form.hospital_email.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_email.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Hospital Website</span></label>
+                        {{ form.hospital_website }}
+                        {% if form.hospital_website.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_website.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Hospital Motto</span></label>
+                        {{ form.hospital_motto }}
+                        {% if form.hospital_motto.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_motto.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Hospital Logo</span></label>
+                        {{ form.hospital_logo }}
+                        {% if form.hospital_logo.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.hospital_logo.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Currency Symbol</span></label>
+                        {{ form.currency_symbol }}
+                        {% if form.currency_symbol.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.currency_symbol.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Timezone Label</span></label>
+                        {{ form.timezone_label }}
+                        {% if form.timezone_label.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.timezone_label.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Default E-Card Fee</span></label>
+                        {{ form.default_e_card_fee }}
+                        {% if form.default_e_card_fee.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.default_e_card_fee.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Record Retention Days</span></label>
+                        {{ form.record_retention_days }}
+                        {% if form.record_retention_days.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.record_retention_days.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Backup Instructions</span></label>
+                        {{ form.backup_instructions }}
+                        {% if form.backup_instructions.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.backup_instructions.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn btn-primary">Save Hospital Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Current Identity</h2>
+                    <p><strong>Name:</strong> {{ hospital_settings.hospital_name }}</p>
+                    <p><strong>Short Name:</strong> {{ hospital_settings.short_name }}</p>
+                    <p><strong>Phone:</strong> {{ hospital_settings.hospital_phone|default:"-" }}</p>
+                    <p><strong>Email:</strong> {{ hospital_settings.hospital_email|default:"-" }}</p>
+                    <p><strong>Currency:</strong> {{ hospital_settings.currency_symbol }}</p>
+                    <p><strong>Timezone:</strong> {{ hospital_settings.timezone_label }}</p>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Operational Notes</h2>
+                    <p class="text-base-content/70">
+                        This page prepares the system for wider administration controls.
+                        Backup/restore automation and deeper retention enforcement can build on these settings next.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

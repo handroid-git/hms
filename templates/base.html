@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Hospital Management System{% endblock %}</title>
+    <title>{% block title %}{{ hospital_name|default:"Hospital Management System" }}{% endblock %}</title>
     {% tailwind_css %}
     <style>
         @keyframes bell-shake {
@@ -87,7 +87,7 @@
 
     <div class="flex-1 min-w-0 px-2">
         <a href="{% url 'home' %}" class="text-xl font-bold hover:opacity-90 truncate">
-            HMS
+            {{ hospital_short_name|default:"HMS" }}
         </a>
     </div>
 
@@ -144,8 +144,8 @@
 
         <footer class="bg-blue-800 text-white py-4 px-4 sm:px-6 border-t border-blue-900">
             <div class="flex flex-col md:flex-row justify-between items-center gap-2">
-                <p class="font-semibold">Hospital Management System</p>
-                <p class="text-sm opacity-90">© 2026 HMS. Powered and designed by Handroid Concepts(HC).</p>
+                <p class="font-semibold">{{ hospital_name|default:"Hospital Management System" }}</p>
+                <p class="text-sm opacity-90">© 2026 {{ hospital_short_name|default:"HMS" }}. Powered and designed by Handroid Concepts(HC).</p>
             </div>
         </footer>
     </div>
@@ -154,8 +154,12 @@
         <label for="sidebar-drawer" class="drawer-overlay"></label>
         <aside class="min-h-full w-72 bg-base-100 border-r border-base-300 pt-20 lg:pt-0">
             <div class="p-5 border-b border-base-300">
-                <a href="{% url 'home' %}" class="text-2xl font-bold hover:text-blue-700">HMS</a>
-                <p class="text-sm text-base-content/70">Professional hospital workflow system</p>
+                <a href="{% url 'home' %}" class="text-2xl font-bold hover:text-blue-700">
+                    {{ hospital_short_name|default:"HMS" }}
+                </a>
+                <p class="text-sm text-base-content/70">
+                    {{ hospital_name|default:"Professional hospital workflow system" }}
+                </p>
             </div>
 
             <ul class="menu p-4 gap-1">
@@ -214,6 +218,7 @@
                 {% if request.user.role == "DOCTOR" or request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'doctor_dashboard' %}">Doctor Dashboard</a></li>
                     <li><a href="{% url 'doctor_consultation_start' %}">Start Consultation</a></li>
+                    <li><a href="{% url 'doctor_ongoing_consultations' %}">Ongoing Consultations</a></li>
                     <li><a href="{% url 'appointment_create' %}">Schedule Appointment</a></li>
                 {% endif %}
 
@@ -233,6 +238,7 @@
                     <li><a href="{% url 'accountant_dashboard' %}">Accountant Dashboard</a></li>
                     <li><a href="{% url 'billing_list' %}">Billing</a></li>
                     <li><a href="{% url 'archived_billing_list' %}">Archived Bills</a></li>
+                    <li><a href="{% url 'doctor_fee_list' %}">Doctor Consultation Fees</a></li>
                     <li><a href="{% url 'payroll_dashboard' %}">Payroll Dashboard</a></li>
                     <li><a href="{% url 'salary_structure_list' %}">Salary Structures</a></li>
                     <li><a href="{% url 'reports_home' %}">Reports</a></li>
@@ -240,13 +246,14 @@
 
                 {% if request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                    <li><a href="{% url 'hospital_settings' %}">Hospital Settings</a></li>
                 {% endif %}
 
                 {% if request.user.is_authenticated %}
                     <li><a href="{% url 'payroll_list' %}">My Payroll</a></li>
+                    <li><a href="{% url 'profile' %}">My Profile</a></li>
+                    <li><a href="{% url 'change_password' %}">Change Password</a></li>
                 {% endif %}
-
-                <li><a href="{% url 'profile' %}">My Profile</a></li>
             </ul>
         </aside>
     </div>

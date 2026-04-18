@@ -2,16 +2,134 @@
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-5xl mx-auto space-y-6">
     <div class="card bg-base-100 shadow-lg">
         <div class="card-body">
-            <h2 class="card-title">My Profile</h2>
+            <h1 class="card-title text-2xl">My Profile</h1>
+            <p class="text-base-content/70">
+                Update your personal details, shift information, and profile picture.
+            </p>
+        </div>
+    </div>
 
-            <form method="post" enctype="multipart/form-data" class="space-y-4">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-            </form>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Profile Overview</h2>
+
+                {% if request.user.profile_picture %}
+                    <img
+                        src="{{ request.user.profile_picture.url }}"
+                        alt="Profile picture"
+                        class="w-32 h-32 rounded-full object-cover border border-base-300"
+                    >
+                {% else %}
+                    <div class="w-32 h-32 rounded-full bg-base-200 flex items-center justify-center text-4xl font-bold border border-base-300">
+                        {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+
+                <div class="space-y-2 mt-3 w-full text-left">
+                    <p><strong>Name:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+                    <p><strong>Username:</strong> {{ request.user.username }}</p>
+                    <p><strong>Role:</strong> {{ request.user.get_role_display }}</p>
+                    <p><strong>Employee ID:</strong> {{ request.user.employee_id|default:"-" }}</p>
+                    <p><strong>Email:</strong> {{ request.user.email|default:"-" }}</p>
+                    <p><strong>Phone:</strong> {{ request.user.phone_number|default:"-" }}</p>
+                    <p><strong>Shift Start:</strong> {{ request.user.shift_start|default:"-" }}</p>
+                    <p><strong>Shift End:</strong> {{ request.user.shift_end|default:"-" }}</p>
+                    <p><strong>Shift Days:</strong> {{ request.user.shift_days|default:"-" }}</p>
+                </div>
+
+                <div class="w-full mt-4 space-y-2">
+                    <a href="{% url 'change_password' %}" class="btn btn-outline w-full">Change Password</a>
+                    <a href="{% url 'app_settings' %}" class="btn btn-outline w-full">Settings</a>
+                    {% if can_manage_doctor_fees %}
+                        <a href="{% url 'doctor_fee_list' %}" class="btn btn-outline w-full">Doctor Consultation Fees</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="xl:col-span-2 card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Edit Profile</h2>
+
+                <form method="post" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% csrf_token %}
+
+                    <div>
+                        <label class="label"><span class="label-text">First Name</span></label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.first_name.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Last Name</span></label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.last_name.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Email</span></label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.email.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Phone Number</span></label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.phone_number.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Profile Picture</span></label>
+                        {{ form.profile_picture }}
+                        {% if form.profile_picture.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.profile_picture.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Shift Start</span></label>
+                        {{ form.shift_start }}
+                        {% if form.shift_start.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.shift_start.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="label"><span class="label-text">Shift End</span></label>
+                        {{ form.shift_end }}
+                        {% if form.shift_end.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.shift_end.errors|join:", " }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="label"><span class="label-text">Shift Days</span></label>
+                        {{ form.shift_days }}
+                        {% if form.shift_days.errors %}
+                            <p class="text-error text-sm mt-1">{{ form.shift_days.errors|join:", " }}</p>
+                        {% endif %}
+                        <p class="text-xs text-base-content/60 mt-1">
+                            Example: ["Monday", "Tuesday", "Friday"]
+                        </p>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

@@ -1,4 +1,6 @@
 import uuid
+from decimal import Decimal
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
@@ -31,6 +33,12 @@ class User(AbstractUser):
     shift_days = models.JSONField(default=list, blank=True)
 
     is_available_for_appointments = models.BooleanField(default=True)
+
+    doctor_consultation_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("5000.00"),
+    )
 
     verification_status = models.CharField(
         max_length=20,

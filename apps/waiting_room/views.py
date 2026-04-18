@@ -2,9 +2,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
 from apps.accounts.models import Role, User
 from apps.notifications.services import notify_waiting_room_overload
 from apps.patients.models import TriageRecord
+
 from .forms import WaitingRoomEntryForm
 from .models import WaitingRoomEntry
 from .services import (
@@ -14,18 +17,32 @@ from .services import (
 )
 
 
+def _can_view_waiting_room(user):
+    return user.role in [Role.NURSE, Role.DOCTOR, Role.ADMIN] or user.is_superuser
+
+
+def _can_modify_waiting_room(user):
+    return user.role in [Role.NURSE, Role.ADMIN] or user.is_superuser
+
+
 @login_required
 def waiting_room_list(request):
+    if not _can_view_waiting_room(request.user):
+        return render(request, "dashboards/access_denied.html", status=403)
+
     entries = list(get_active_waiting_entries())
 
     entry_rows = []
     for entry in entries:
-        entry_rows.append({
-            "entry": entry,
-            "position": get_queue_position(entry, entries),
-        })
+        entry_rows.append(
+            {
+                "entry": entry,
+                "position": get_queue_position(entry, entries),
+            }
+        )
 
-    if waiting_room_is_overloaded():
+    is_overloaded = waiting_room_is_overloaded()
+    if is_overloaded:
         alert_users = User.objects.filter(
             role__in=[Role.NURSE, Role.DOCTOR],
             is_active=True,
@@ -38,13 +55,17 @@ def waiting_room_list(request):
         "waiting_room/waiting_room_list.html",
         {
             "entry_rows": entry_rows,
-            "is_overloaded": waiting_room_is_overloaded(),
+            "is_overloaded": is_overloaded,
+            "can_modify_waiting_room": _can_modify_waiting_room(request.user),
         },
     )
 
 
 @login_required
 def waiting_room_add(request):
+    if not _can_modify_waiting_room(request.user):
+        return render(request, "dashboards/access_denied.html", status=403)
+
     patient_id = request.GET.get("patient")
 
     if request.method == "POST":
@@ -86,10 +107,15 @@ def waiting_room_add(request):
 
 
 @login_required
+@require_POST
 def waiting_room_remove(request, pk):
+    if not _can_modify_waiting_room(request.user):
+        return render(request, "dashboards/access_denied.html", status=403)
+
     entry = get_object_or_404(WaitingRoomEntry, pk=pk, is_active=True)
     entry.is_active = False
     entry.status = WaitingRoomEntry.Status.COMPLETED
     entry.save(update_fields=["is_active", "status"])
+
     messages.success(request, "Patient removed from waiting room.")
     return redirect("waiting_room_list")

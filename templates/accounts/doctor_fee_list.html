@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Doctor Consultation Fees{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-wrap justify-between items-center gap-3">
+        <div>
+            <h1 class="text-3xl font-bold">Doctor Consultation Fees</h1>
+            <p class="text-base-content/70">
+                Set and manage each doctor's consultation fee.
+            </p>
+        </div>
+
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'app_settings' %}" class="btn btn-outline">Settings</a>
+            <a href="{% url 'accountant_dashboard' %}" class="btn btn-outline">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-3">
+                    <label class="label">
+                        <span class="label-text">Search Doctors</span>
+                    </label>
+                    {{ filter_form.q }}
+                </div>
+
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Username</th>
+                        <th>Employee ID</th>
+                        <th>Consultation Fee</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doctor in doctors %}
+                        <tr>
+                            <td>{{ doctor.get_full_name|default:doctor.username }}</td>
+                            <td>{{ doctor.username }}</td>
+                            <td>{{ doctor.employee_id|default:"-" }}</td>
+                            <td>₦{{ doctor.doctor_consultation_fee }}</td>
+                            <td>
+                                <a href="{% url 'doctor_fee_update' doctor.pk %}" class="btn btn-sm btn-primary">
+                                    Update Fee
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">No doctors found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

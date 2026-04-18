@@ -18,6 +18,7 @@
             <div class="card-body">
                 <h2 class="card-title">Bill Summary</h2>
                 <p><strong>Consultation Fee:</strong> ₦{{ billing.consultation_fee }}</p>
+                <p><strong>E-Card Fee:</strong> ₦{{ billing.e_card_fee }}</p>
                 <p><strong>Brought Forward Balance:</strong> ₦{{ billing.brought_forward_balance }}</p>
                 <p><strong>Lab Total:</strong> ₦{{ billing.lab_total }}</p>
                 <p><strong>Prescription Total:</strong> ₦{{ billing.prescription_total }}</p>
@@ -27,7 +28,7 @@
 
                 <div class="mt-4">
                     <p class="font-semibold">Extra Items</p>
-                    <div class="space-y-2 mt-2">
+                    <div class="space-y-3 mt-2">
                         {% for item in extra_items %}
                             <div class="border border-base-300 rounded-lg p-3">
                                 <p><strong>{{ item.title }}</strong> — ₦{{ item.price }}</p>
@@ -58,9 +59,20 @@
                 {% if billing.can_edit_archived_amounts %}
                     <div class="divider"></div>
 
-                    <h2 class="card-title">Update Bill</h2>
+                    <h2 class="card-title">Update Initial Billing Items</h2>
                     <form method="post" class="space-y-4">
                         {% csrf_token %}
+
+                        <div>
+                            <label class="label"><span class="label-text">Consultation Fee</span></label>
+                            {{ billing_form.consultation_fee }}
+                        </div>
+
+                        <div>
+                            <label class="label"><span class="label-text">E-Card Fee</span></label>
+                            {{ billing_form.e_card_fee }}
+                        </div>
+
                         <div>
                             <label class="label"><span class="label-text">Other Charges</span></label>
                             {{ billing_form.other_charges }}
@@ -101,6 +113,49 @@
             </div>
         </div>
     </div>
+
+    {% if extra_items and billing.can_edit_archived_amounts %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Edit Extra Billing Items</h2>
+                <div class="space-y-4">
+                    {% for item in extra_items %}
+                        <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4 border border-base-300 rounded-lg p-4">
+                            {% csrf_token %}
+                            <input type="hidden" name="extra_item_id" value="{{ item.pk }}">
+
+                            <div>
+                                <label class="label"><span class="label-text">Title</span></label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value="{{ item.title }}"
+                                    class="input input-bordered w-full"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="label"><span class="label-text">Price</span></label>
+                                <input
+                                    type="number"
+                                    name="price"
+                                    value="{{ item.price }}"
+                                    step="0.01"
+                                    class="input input-bordered w-full"
+                                >
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <button type="submit" name="update_extra_item" class="btn btn-outline">
+                                    Update "{{ item.title }}"
+                                </button>
+                            </div>
+                        </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
     {% if billing.can_edit_archived_amounts %}
         <div class="card bg-base-100 shadow-sm">

@@ -5,7 +5,9 @@
 <div class="space-y-4">
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold">Waiting Room</h1>
-        <a href="{% url 'waiting_room_add' %}" class="btn btn-primary">Add Patient</a>
+        {% if can_modify_waiting_room %}
+            <a href="{% url 'waiting_room_add' %}" class="btn btn-primary">Add Patient</a>
+        {% endif %}
     </div>
 
     {% if is_overloaded %}
@@ -36,9 +38,16 @@
                             <td>{{ row.entry.added_by }}</td>
                             <td>{{ row.entry.created_at }}</td>
                             <td>
-                                <a href="{% url 'waiting_room_remove' row.entry.pk %}" class="btn btn-sm btn-error text-white">
-                                    Remove
-                                </a>
+                                {% if can_modify_waiting_room %}
+                                    <form method="post" action="{% url 'waiting_room_remove' row.entry.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-error text-white">
+                                            Remove
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-sm text-base-content/60">View only</span>
+                                {% endif %}
                             </td>
                         </tr>
                     {% empty %}

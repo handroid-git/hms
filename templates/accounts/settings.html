@@ -7,7 +7,7 @@
         <div class="card-body">
             <h1 class="card-title text-2xl">Settings</h1>
             <p class="text-base-content/70">
-                Manage your account preferences, notifications, and quick access options.
+                Manage your account preferences, notifications, and security options.
             </p>
         </div>
     </div>
@@ -42,11 +42,37 @@
                 <div class="card-body">
                     <h2 class="card-title">Appearance</h2>
                     <p class="text-base-content/70">
-                        Use the theme toggle in the navbar to switch between light and dark mode.
+                        Use the theme toggle in the sidebar to switch between light and dark mode.
                         Your choice is saved on this device.
                     </p>
                 </div>
             </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Security</h2>
+                    <p class="text-base-content/70 mb-3">
+                        Keep your account secure by updating your password regularly.
+                    </p>
+                    <a href="{% url 'change_password' %}" class="btn btn-outline">
+                        Change Password
+                    </a>
+                </div>
+            </div>
+
+            {% if can_manage_doctor_fees %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="card-title">Doctor Consultation Fee Management</h2>
+                        <p class="text-base-content/70 mb-3">
+                            Manage the consultation fee assigned to each doctor.
+                        </p>
+                        <a href="{% url 'doctor_fee_list' %}" class="btn btn-outline">
+                            Open Doctor Consultation Fees
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
 
         <div class="space-y-6">
@@ -58,6 +84,10 @@
                         <a href="{% url 'profile' %}" class="btn btn-outline">My Profile</a>
                         <a href="{% url 'notification_list' %}" class="btn btn-outline">Notifications</a>
                         <a href="{% url 'conversation_list' %}" class="btn btn-outline">Chat</a>
+                        <a href="{% url 'change_password' %}" class="btn btn-outline">Change Password</a>
+                        {% if can_manage_doctor_fees %}
+                            <a href="{% url 'doctor_fee_list' %}" class="btn btn-outline">Doctor Consultation Fees</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -68,6 +98,8 @@
                     <p><strong>Name:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
                     <p><strong>Role:</strong> {{ request.user.get_role_display }}</p>
                     <p><strong>Email:</strong> {{ request.user.email|default:"-" }}</p>
+                    <p><strong>Phone:</strong> {{ request.user.phone_number|default:"-" }}</p>
+                    <p><strong>Employee ID:</strong> {{ request.user.employee_id|default:"-" }}</p>
                 </div>
             </div>
         </div>

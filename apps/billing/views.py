@@ -1,24 +1,37 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+
 from apps.accounts.models import Role
-from .forms import BillingExtraItemForm, BillingNoteForm, BillingUpdateForm, PaymentTransactionForm
-from .models import Billing
+
+from .forms import (
+    BillingExtraItemForm,
+    BillingExtraItemUpdateForm,
+    BillingNoteForm,
+    BillingUpdateForm,
+    PaymentTransactionForm,
+)
+from .models import Billing, BillingExtraItem
 from .services import (
     add_billing_extra_item,
     archive_bill,
     auto_archive_old_bills,
     receive_payment,
     update_billing_adjustments,
+    update_billing_extra_item,
     update_billing_note,
 )
 
 
+def _can_access_billing_area(user):
+    return user.role in [Role.ACCOUNTANT, Role.ADMIN] or user.is_superuser
+
+
 @login_required
 def billing_dashboard(request):
-    if request.user.role != Role.ACCOUNTANT:
+    if not _can_access_billing_area(request.user):
         return render(request, "dashboards/access_denied.html", status=403)
 
     auto_archive_old_bills()
@@ -50,7 +63,7 @@ def billing_dashboard(request):
 
 @login_required
 def billing_list(request):
-    if request.user.role != Role.ACCOUNTANT:
+    if not _can_access_billing_area(request.user):
         return render(request, "dashboards/access_denied.html", status=403)
 
     auto_archive_old_bills()
@@ -76,7 +89,7 @@ def billing_list(request):
 
 @login_required
 def archived_billing_list(request):
-    if request.user.role != Role.ACCOUNTANT:
+    if not _can_access_billing_area(request.user):
         return render(request, "dashboards/access_denied.html", status=403)
 
     query = request.GET.get("q", "").strip()
@@ -101,7 +114,7 @@ def archived_billing_list(request):
 
 @login_required
 def billing_detail(request, pk):
-    if request.user.role != Role.ACCOUNTANT:
+    if not _can_access_billing_area(request.user):
         return render(request, "dashboards/access_denied.html", status=403)
 
     billing = get_object_or_404(
@@ -121,6 +134,8 @@ def billing_detail(request, pk):
                     update_billing_adjustments(
                         billing=billing,
                         handled_by=request.user,
+                        consultation_fee=billing_form.cleaned_data["consultation_fee"],
+                        e_card_fee=billing_form.cleaned_data["e_card_fee"],
                         other_charges=billing_form.cleaned_data["other_charges"],
                         discount=billing_form.cleaned_data["discount"],
                     )
@@ -168,11 +183,34 @@ def billing_detail(request, pk):
                 except ValueError as exc:
                     messages.error(request, str(exc))
 
+        elif "update_extra_item" in request.POST:
+            billing_form = BillingUpdateForm(instance=billing)
+            payment_form = PaymentTransactionForm()
+            extra_item_form = BillingExtraItemForm()
+            note_form = BillingNoteForm(instance=billing)
+
+            extra_item = get_object_or_404(BillingExtraItem, pk=request.POST.get("extra_item_id"), billing=billing)
+            extra_item_update_form = BillingExtraItemUpdateForm(request.POST, instance=extra_item)
+
+            if extra_item_update_form.is_valid():
+                try:
+                    update_billing_extra_item(
+                        extra_item=extra_item,
+                        handled_by=request.user,
+                        title=extra_item_update_form.cleaned_data["title"],
+                        price=extra_item_update_form.cleaned_data["price"],
+                    )
+                    messages.success(request, "Extra billing item updated.")
+                    return redirect("billing_detail", pk=billing.pk)
+                except ValueError as exc:
+                    messages.error(request, str(exc))
+
         elif "archive_bill" in request.POST:
             billing_form = BillingUpdateForm(instance=billing)
             payment_form = PaymentTransactionForm()
             extra_item_form = BillingExtraItemForm()
             note_form = BillingNoteForm(instance=billing)
+
             archive_bill(billing, request.user)
             messages.success(request, "Bill archived successfully.")
             return redirect("billing_list")
@@ -201,6 +239,11 @@ def billing_detail(request, pk):
     payments = billing.payments.select_related("received_by").order_by("-created_at")
     extra_items = billing.extra_items.order_by("-created_at")
 
+    extra_item_forms = {
+        str(item.pk): BillingExtraItemUpdateForm(instance=item)
+        for item in extra_items
+    }
+
     return render(
         request,
         "billing/billing_detail.html",
@@ -209,6 +252,7 @@ def billing_detail(request, pk):
             "billing_form": billing_form,
             "payment_form": payment_form,
             "extra_item_form": extra_item_form,
+            "extra_item_forms": extra_item_forms,
             "note_form": note_form,
             "payments": payments,
             "extra_items": extra_items,

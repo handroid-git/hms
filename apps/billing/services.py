@@ -1,7 +1,10 @@
 from decimal import Decimal
+
 from django.db import models, transaction
 from django.utils import timezone
+
 from apps.notifications.services import notify_pharmacists_payment_ready
+
 from .models import Billing, BillingExtraItem, PaymentTransaction
 
 
@@ -27,10 +30,12 @@ def get_patient_outstanding_balance(patient):
 
 
 @transaction.atomic
-def update_billing_adjustments(billing, handled_by, other_charges, discount):
+def update_billing_adjustments(billing, handled_by, consultation_fee, e_card_fee, other_charges, discount):
     if billing.is_archived and not billing.can_edit_archived_amounts:
         raise ValueError("Archived fully paid bills cannot be edited.")
 
+    billing.consultation_fee = consultation_fee
+    billing.e_card_fee = e_card_fee
     billing.other_charges = other_charges
     billing.discount = discount
     billing.handled_by = handled_by
@@ -49,11 +54,30 @@ def add_billing_extra_item(billing, handled_by, title, price):
         title=title,
         price=price,
         created_by=handled_by,
+        updated_by=handled_by,
     )
     billing.handled_by = handled_by
     billing.recalculate_total()
     billing.save()
     return billing
+
+
+@transaction.atomic
+def update_billing_extra_item(extra_item, handled_by, title, price):
+    billing = extra_item.billing
+
+    if billing.is_archived and not billing.can_edit_archived_amounts:
+        raise ValueError("Archived fully paid bills cannot be edited.")
+
+    extra_item.title = title
+    extra_item.price = price
+    extra_item.updated_by = handled_by
+    extra_item.save()
+
+    billing.handled_by = handled_by
+    billing.recalculate_total()
+    billing.save()
+    return extra_item
 
 
 @transaction.atomic

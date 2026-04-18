@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from .models import User, VerificationStatus
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
+
+from .models import Role, User, VerificationStatus
 
 
 class LoginForm(AuthenticationForm):
@@ -158,3 +159,48 @@ class ProfileUpdateForm(forms.ModelForm):
                 }
             ),
         }
+
+
+class StyledPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "input input-bordered w-full"})
+    )
+    new_password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "input input-bordered w-full"})
+    )
+    new_password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "input input-bordered w-full"})
+    )
+
+
+class DoctorConsultationFeeForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["doctor_consultation_fee"]
+        widgets = {
+            "doctor_consultation_fee": forms.NumberInput(
+                attrs={
+                    "class": "input input-bordered w-full",
+                    "step": "0.01",
+                    "min": "0",
+                }
+            ),
+        }
+
+    def clean_doctor_consultation_fee(self):
+        fee = self.cleaned_data["doctor_consultation_fee"]
+        if fee < 0:
+            raise forms.ValidationError("Consultation fee cannot be negative.")
+        return fee
+
+
+class DoctorConsultationFeeFilterForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input input-bordered w-full",
+                "placeholder": "Search by doctor name, username, or employee ID",
+            }
+        ),
+    )
