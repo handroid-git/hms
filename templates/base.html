@@ -247,6 +247,19 @@
                 {% if request.user.role == "ADMIN" or request.user.is_superuser %}
                     <li><a href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
                     <li><a href="{% url 'hospital_settings' %}">Hospital Settings</a></li>
+                    <li>
+                        <a href="{% url 'backup_center' %}" class="flex items-center gap-2">
+                            <span>🗄️</span>
+                            <span>Backup Center</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'retention_center' %}" class="flex items-center gap-2">
+                            <span>🧾</span>
+                            <span>Retention Center</span>
+                        </a>
+                    </li>
+                    <li><a href="{% url 'staff_list' %}">Staff Management</a></li>
                 {% endif %}
 
                 {% if request.user.is_authenticated %}

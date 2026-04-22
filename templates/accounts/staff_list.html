@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h1 class="card-title text-2xl">Staff Management</h1>
+
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <input type="text" name="q" placeholder="Search staff..."
+                       class="input input-bordered w-full">
+
+                <select name="role" class="select select-bordered w-full">
+                    <option value="">All Roles</option>
+                    {% for value,label in roles %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" class="select select-bordered w-full">
+                    <option value="">All Status</option>
+                    {% for value,label in statuses %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <button class="btn btn-primary">Filter</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.get_full_name|default:user.username }}</td>
+                    <td>{{ user.get_role_display }}</td>
+                    <td>{{ user.get_verification_status_display }}</td>
+                    <td>{{ user.is_active|yesno:"Yes,No" }}</td>
+                    <td class="flex gap-2">
+
+                        {% if user.verification_status == "PENDING" %}
+                            <a href="{% url 'staff_approve' user.id %}" class="btn btn-success btn-xs">Approve</a>
+                            <a href="{% url 'staff_reject' user.id %}" class="btn btn-error btn-xs">Reject</a>
+                        {% endif %}
+
+                        <a href="{% url 'staff_toggle_active' user.id %}" class="btn btn-warning btn-xs">
+                            Toggle Active
+                        </a>
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No staff found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

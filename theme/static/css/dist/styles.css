@@ -723,6 +723,9 @@
       }
     }
   }
+  .visible {
+    visibility: visible;
+  }
   @layer daisyui.l1.l2.l3 {
     .toast {
       position: fixed;
@@ -1831,6 +1834,27 @@
     }
   }
   @layer daisyui.l1.l2.l3 {
+    .stat-value {
+      grid-column-start: 1;
+      white-space: nowrap;
+      font-size: 2rem;
+      font-weight: 800;
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
+    .stat-title {
+      grid-column-start: 1;
+      white-space: nowrap;
+      color: var(--color-base-content);
+      font-size: 0.75rem;
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .stat-title {
+        color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+      }
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
     .chat-header {
       grid-row-start: 1;
       display: flex;
@@ -2088,6 +2112,27 @@
       --size: calc(var(--size-selector, 0.25rem) * 6);
       height: var(--size);
       padding-inline: calc(var(--size) / 2 - var(--border));
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
+    .stat {
+      display: inline-grid;
+      width: 100%;
+      column-gap: calc(0.25rem * 4);
+      padding-inline: calc(0.25rem * 6);
+      padding-block: calc(0.25rem * 4);
+      grid-template-columns: repeat(1, 1fr);
+    }
+    .stat:not(:last-child) {
+      border-inline-end: var(--border) dashed currentColor;
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .stat:not(:last-child) {
+        border-inline-end: var(--border) dashed color-mix(in oklab, currentColor 10%, #0000);
+      }
+    }
+    .stat:not(:last-child) {
+      border-block-end: none;
     }
   }
   @layer daisyui.l1.l2.l3 {
@@ -2646,6 +2691,9 @@
     --tw-tracking: var(--tracking-normal);
     letter-spacing: var(--tracking-normal);
   }
+  .whitespace-pre-line {
+    white-space: pre-line;
+  }
   @layer daisyui.l1.l2 {
     .alert-error {
       color: var(--color-error-content);
@@ -2724,6 +2772,9 @@
   }
   .text-info {
     color: var(--color-info);
+  }
+  .text-primary {
+    color: var(--color-primary);
   }
   .text-red-700 {
     color: var(--color-red-700);
@@ -2836,6 +2887,13 @@
     }
   }
   @layer daisyui.l1.l2 {
+    .btn-xs {
+      --fontsize: 0.6875rem;
+      --btn-p: 0.5rem;
+      --size: calc(var(--size-field, 0.25rem) * 6);
+    }
+  }
+  @layer daisyui.l1.l2 {
     .badge-warning {
       --badge-color: var(--color-warning);
       --badge-fg: var(--color-warning-content);
@@ -2863,6 +2921,12 @@
     .btn-success {
       --btn-color: var(--color-success);
       --btn-fg: var(--color-success-content);
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
+    .btn-warning {
+      --btn-color: var(--color-warning);
+      --btn-fg: var(--color-warning-content);
     }
   }
   @layer daisyui.l1.l2 {

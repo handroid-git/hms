@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import HospitalSetting
+from .models import BackupOperationLog, HospitalSetting
 
 
 @admin.register(HospitalSetting)
@@ -20,3 +20,17 @@ class HospitalSettingAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(BackupOperationLog)
+class BackupOperationLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "operation_type",
+        "file_type",
+        "status",
+        "performed_by",
+        "created_at",
+    )
+    list_filter = ("operation_type", "file_type", "status", "created_at")
+    search_fields = ("title", "file_path", "notes")

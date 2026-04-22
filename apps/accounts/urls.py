@@ -10,6 +10,10 @@ from .views import (
     doctor_fee_update_view,
     profile_view,
     signup_view,
+    staff_list_view,
+    staff_approve_view,
+    staff_reject_view,
+    staff_toggle_active_view,
 )
 
 urlpatterns = [
@@ -22,4 +26,10 @@ urlpatterns = [
     path("change-password/", UserPasswordChangeView.as_view(), name="change_password"),
     path("doctor-fees/", doctor_fee_list_view, name="doctor_fee_list"),
     path("doctor-fees/<uuid:pk>/", doctor_fee_update_view, name="doctor_fee_update"),
+
+    # STEP 9
+    path("staff/", staff_list_view, name="staff_list"),
+    path("staff/<uuid:pk>/approve/", staff_approve_view, name="staff_approve"),
+    path("staff/<uuid:pk>/reject/", staff_reject_view, name="staff_reject"),
+    path("staff/<uuid:pk>/toggle-active/", staff_toggle_active_view, name="staff_toggle_active"),
 ]

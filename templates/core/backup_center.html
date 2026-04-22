@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Backup Center{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-3xl">Backup & Restore Center</h1>
+            <p class="text-base-content/70">
+                Monitor system snapshot information, follow restore guidance, and log backup or restore operations.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Patients</div>
+            <div class="stat-value text-primary">{{ total_patients }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Consultations</div>
+            <div class="stat-value text-primary">{{ total_consultations }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Bills</div>
+            <div class="stat-value text-primary">{{ total_billings }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Admissions</div>
+            <div class="stat-value text-primary">{{ total_admissions }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">System Snapshot</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="border border-base-300 rounded-xl p-4">
+                            <p><strong>Active Admissions:</strong> {{ total_active_admissions }}</p>
+                            <p><strong>Archived Bills:</strong> {{ total_archived_bills }}</p>
+                            <p><strong>Outstanding Balance:</strong> {{ hospital_settings.currency_symbol }}{{ total_outstanding_balance }}</p>
+                        </div>
+
+                        <div class="border border-base-300 rounded-xl p-4">
+                            <p><strong>Latest Patient:</strong> {% if latest_patient %}{{ latest_patient.full_name }}{% else %}-{% endif %}</p>
+                            <p><strong>Latest Consultation:</strong> {% if latest_consultation %}{{ latest_consultation.patient.full_name }}{% else %}-{% endif %}</p>
+                            <p><strong>Latest Billing:</strong> {% if latest_billing %}{{ latest_billing.patient.full_name }}{% else %}-{% endif %}</p>
+                            <p><strong>Latest Admission:</strong> {% if latest_admission %}{{ latest_admission.patient.full_name }}{% else %}-{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Backup / Restore Log Entry</h2>
+
+                    <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+
+                        <div>
+                            <label class="label"><span class="label-text">Operation Type</span></label>
+                            {{ log_form.operation_type }}
+                            {% if log_form.operation_type.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.operation_type.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="label"><span class="label-text">File Type</span></label>
+                            {{ log_form.file_type }}
+                            {% if log_form.file_type.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.file_type.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="label"><span class="label-text">Title</span></label>
+                            {{ log_form.title }}
+                            {% if log_form.title.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.title.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="label"><span class="label-text">File Path / Reference</span></label>
+                            {{ log_form.file_path }}
+                            {% if log_form.file_path.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.file_path.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label class="label"><span class="label-text">Status</span></label>
+                            {{ log_form.status }}
+                            {% if log_form.status.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.status.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="label"><span class="label-text">Notes</span></label>
+                            {{ log_form.notes }}
+                            {% if log_form.notes.errors %}
+                                <p class="text-error text-sm mt-1">{{ log_form.notes.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <button type="submit" class="btn btn-primary">Save Operation Log</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body overflow-x-auto">
+                    <h2 class="card-title">Recent Backup / Restore Operations</h2>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Operation</th>
+                                <th>File Type</th>
+                                <th>Status</th>
+                                <th>Performed By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_operations %}
+                                <tr>
+                                    <td>{{ item.title }}</td>
+                                    <td>{{ item.get_operation_type_display }}</td>
+                                    <td>{{ item.get_file_type_display }}</td>
+                                    <td>{{ item.get_status_display }}</td>
+                                    <td>{{ item.performed_by|default:"-" }}</td>
+                                    <td>{{ item.created_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6">No backup or restore operations logged yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Configured Guidance</h2>
+                    {% if hospital_settings.backup_instructions %}
+                        <div class="whitespace-pre-line text-sm text-base-content/80">
+                            {{ hospital_settings.backup_instructions }}
+                        </div>
+                    {% else %}
+                        <p class="text-base-content/70">
+                            No backup guidance has been configured yet. Update it in Hospital Settings.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Restore Checklist</h2>
+                    <div class="space-y-2 text-sm text-base-content/80">
+                        <p>1. Confirm the target backup file and date.</p>
+                        <p>2. Confirm all staff are logged out before restore.</p>
+                        <p>3. Back up the current live database before replacing it.</p>
+                        <p>4. Restore database and media files together when needed.</p>
+                        <p>5. Run system checks after restore.</p>
+                        <p>6. Log the restore operation on this page.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Quick Links</h2>
+                    <div class="flex flex-col gap-3">
+                        <a href="{% url 'hospital_settings' %}" class="btn btn-outline">Hospital Settings</a>
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline">Admin Dashboard</a>
+                        <a href="{% url 'reports_home' %}" class="btn btn-outline">Reports</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

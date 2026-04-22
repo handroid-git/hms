@@ -19,7 +19,7 @@ from .forms import (
     StaffSignupForm,
     StyledPasswordChangeForm,
 )
-from .models import Role, User
+from .models import Role, User, VerificationStatus
 
 
 class UserLoginView(LoginView):
@@ -180,3 +180,83 @@ def doctor_fee_update_view(request, pk):
             "form": form,
         },
     )
+
+
+# =========================
+# STAFF ADMIN (STEP 9)
+# =========================
+
+@login_required
+def staff_list_view(request):
+    if request.user.role != Role.ADMIN and not request.user.is_superuser:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    q = request.GET.get("q", "")
+    role_filter = request.GET.get("role", "")
+    status_filter = request.GET.get("status", "")
+
+    users = User.objects.all().order_by("-date_joined")
+
+    if q:
+        users = users.filter(
+            Q(username__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(last_name__icontains=q)
+            | Q(employee_id__icontains=q)
+        )
+
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    if status_filter:
+        users = users.filter(verification_status=status_filter)
+
+    return render(
+        request,
+        "accounts/staff_list.html",
+        {
+            "users": users,
+            "roles": Role.choices,
+            "statuses": VerificationStatus.choices,
+        },
+    )
+
+
+@login_required
+def staff_approve_view(request, pk):
+    if request.user.role != Role.ADMIN and not request.user.is_superuser:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    user = get_object_or_404(User, pk=pk)
+    user.approve(request.user)
+
+    messages.success(request, f"{user.username} approved successfully.")
+    return redirect("staff_list")
+
+
+@login_required
+def staff_reject_view(request, pk):
+    if request.user.role != Role.ADMIN and not request.user.is_superuser:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    user = get_object_or_404(User, pk=pk)
+    user.reject(request.user)
+
+    messages.success(request, f"{user.username} rejected.")
+    return redirect("staff_list")
+
+
+@login_required
+def staff_toggle_active_view(request, pk):
+    if request.user.role != Role.ADMIN and not request.user.is_superuser:
+        return render(request, "dashboards/access_denied.html", status=403)
+
+    user = get_object_or_404(User, pk=pk)
+    user.is_active = not user.is_active
+    user.save(update_fields=["is_active"])
+
+    messages.success(
+        request,
+        f"{user.username} {'activated' if user.is_active else 'deactivated'}.",
+    )
+    return redirect("staff_list")

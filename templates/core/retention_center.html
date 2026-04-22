@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Retention Center{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+            <h1 class="card-title text-3xl">Retention & Archival Center</h1>
+            <p class="text-base-content/70">
+                Manage retention enforcement, review archived operational records, and monitor cleanup history.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Archived Consultations</div>
+            <div class="stat-value text-primary">{{ archived_consultations }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Archived Admissions</div>
+            <div class="stat-value text-primary">{{ archived_admissions }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Archived Patient Records</div>
+            <div class="stat-value text-primary">{{ archived_patient_records }}</div>
+        </div>
+
+        <div class="stat bg-base-100 shadow-sm rounded-2xl">
+            <div class="stat-title">Archived Bills</div>
+            <div class="stat-value text-primary">{{ archived_billings }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Run Retention Archival</h2>
+                    <p class="text-sm text-base-content/70">
+                        Records older than the configured retention period will be archived from active operational workflows.
+                    </p>
+
+                    <div class="mt-4 rounded-xl bg-base-200 p-4 text-sm">
+                        <p><strong>Retention Period:</strong> {{ hospital_settings.record_retention_days }} days</p>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            Run Retention Process
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body overflow-x-auto">
+                    <h2 class="card-title">Recent Retention Runs</h2>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Total Archived</th>
+                                <th>Performed By</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_runs %}
+                                <tr>
+                                    <td>{{ item.total_archived }}</td>
+                                    <td>{{ item.performed_by|default:"-" }}</td>
+                                    <td>{{ item.created_at }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3">No retention runs have been logged yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Policy Summary</h2>
+                    <div class="space-y-2 text-sm text-base-content/80">
+                        <p>• Archived records are kept for historical reference.</p>
+                        <p>• Archived records are removed from active workflows.</p>
+                        <p>• Bills may remain visible where financial follow-up is still required.</p>
+                        <p>• Run a system backup before archival operations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title">Quick Links</h2>
+                    <div class="flex flex-col gap-3">
+                        <a href="{% url 'backup_center' %}" class="btn btn-outline">Backup Center</a>
+                        <a href="{% url 'hospital_settings' %}" class="btn btn-outline">Hospital Settings</a>
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline">Admin Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

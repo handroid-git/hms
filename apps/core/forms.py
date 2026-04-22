@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import HospitalSetting
+from .models import BackupOperationLog, HospitalSetting
 
 
 class HospitalSettingForm(forms.ModelForm):
@@ -52,3 +52,35 @@ class HospitalSettingForm(forms.ModelForm):
         if value <= 0:
             raise forms.ValidationError("Record retention days must be greater than zero.")
         return value
+
+
+class BackupOperationLogForm(forms.ModelForm):
+    class Meta:
+        model = BackupOperationLog
+        fields = [
+            "operation_type",
+            "file_type",
+            "title",
+            "file_path",
+            "status",
+            "notes",
+        ]
+        widgets = {
+            "operation_type": forms.Select(attrs={"class": "select select-bordered w-full"}),
+            "file_type": forms.Select(attrs={"class": "select select-bordered w-full"}),
+            "title": forms.TextInput(attrs={"class": "input input-bordered w-full"}),
+            "file_path": forms.TextInput(
+                attrs={
+                    "class": "input input-bordered w-full",
+                    "placeholder": r"Example: C:\Backups\hms_backup_2026_04_18.sqlite3",
+                }
+            ),
+            "status": forms.Select(attrs={"class": "select select-bordered w-full"}),
+            "notes": forms.Textarea(attrs={"class": "textarea textarea-bordered w-full", "rows": 4}),
+        }
+
+    def clean_title(self):
+        title = self.cleaned_data["title"].strip()
+        if not title:
+            raise forms.ValidationError("Title is required.")
+        return title

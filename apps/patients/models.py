@@ -1,4 +1,5 @@
 import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -164,6 +165,9 @@ class PatientRecord(models.Model):
     discharged = models.BooleanField(default=False)
     died = models.BooleanField(default=False)
     given_birth = models.BooleanField(default=False)
+
+    is_archived = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

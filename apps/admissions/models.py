@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -61,6 +62,9 @@ class Admission(models.Model):
         blank=True,
         related_name="admissions_nurse_confirmed",
     )
+
+    is_archived = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     admitted_at = models.DateTimeField(default=timezone.now)
     discharged_at = models.DateTimeField(null=True, blank=True)
